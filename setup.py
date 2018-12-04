@@ -21,4 +21,9 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=["tests", "tests.*"]),
     install_requires=[],
     zip_safe=False,
+    entry_points={
+        'console_scripts': [
+            'py_dlt_receive = dlt.py_dlt_receive:main',
+        ],
+    },
 )
