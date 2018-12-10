@@ -979,8 +979,12 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
 
         msg = client.read_message(verbose)
         while msg:
-            if msg.apid == "" and msg.ctid == "":
-                logger.warning("Received a corrupt message")
+            try:
+                if msg.apid == "" and msg.ctid == "":
+                    logger.warning("Received a corrupt message")
+            except AttributeError:
+                logger.warning("Skipping a very corrupted message")
+                continue
 
             # save the message
             if dumpfile:
