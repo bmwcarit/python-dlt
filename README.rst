@@ -79,9 +79,10 @@ Here are examples of some interesting ways to use these classes:
 * DLTClient and DLTBroker::
 
     >>> from dlt import dlt
-    >>> c = dlt.DLTClient('127.0.0.1')   # Only initializes the client
+    >>> c = dlt.DLTClient(servIP="127.0.0.1")   # Only initializes the client
     >>> c.connect()                      # ...this connects
-    >>> c.read_message()                 # reads a single DLTMessage and returns it
+    >>> dlt.dltlib.dlt_receiver_receive_socket(ctypes.byref(client.receiver)) # receives data
+    >>> c.read_message()                 # reads a single DLTMessage from received data  and returns it
     >>>
     >>> # more interesting is the DLTBroker class...
     >>> # - create an instance that initializes a DLTClient. Accepts a filename
