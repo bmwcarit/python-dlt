@@ -984,6 +984,7 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
                     logger.warning("Received a corrupt message")
             except AttributeError:
                 logger.warning("Skipping a very corrupted message")
+                msg = client.read_message()
                 continue
 
             # save the message
