@@ -5,6 +5,7 @@ filtering DLT messages
 from __future__ import absolute_import
 import logging
 import socket
+import time
 
 from collections import defaultdict
 from threading import Thread, Event, Lock
@@ -85,6 +86,8 @@ class DLTContextHandler(Thread):
                 queue, _ = self.context_map.get(queue_id, (None, None))
                 if queue:
                     queue.put(message)
+            else:
+                time.sleep(0.01)
 
     def stop(self):
         """Stops thread execution"""
