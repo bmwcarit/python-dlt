@@ -948,7 +948,12 @@ class DLTClient(cDltClient):
 def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callback=None):
     """Reimplementation of dlt_client.c:dlt_client_main_loop() in order to handle callback
     function return value"""
+    bad_messages = 0
     while True:
+        if bad_messages > 100:
+            # Some bad data is coming in and we can not recover - raise an error to cause a reconnect
+            logger.warning("Dropping connection due to multiple malformed messages")
+            return False
         # check connection status by peeking on the socket for data.
         # Note that if the remote connection is abruptly terminated,
         # this will raise a socket.timeout exception which the caller is
@@ -981,12 +986,15 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         while msg:
             try:
                 if msg.apid == "" and msg.ctid == "":
-                    logger.warning("Received a corrupt message")
+                    logger.debug("Received a corrupt message")
+                    bad_messages += 1
             except AttributeError:
-                logger.warning("Skipping a very corrupted message")
+                logger.debug("Skipping a very corrupted message")
+                bad_messages += 1
                 msg = client.read_message()
                 continue
 
+            bad_messages = 0
             # save the message
             if dumpfile:
                 dumpfile.write(msg.to_bytes())
