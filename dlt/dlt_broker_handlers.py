@@ -115,6 +115,7 @@ class DLTMessageHandler(Process):
         self.context_map = defaultdict(list)
 
         self._ip_address = client_cfg["ip_address"]
+        self._port = client_cfg["port"]
         self._filename = client_cfg.get("filename")
         self.verbose = client_cfg.get("verbose", 0)
         self.timeout = client_cfg.get("timeout", DLT_CLIENT_TIMEOUT)
@@ -128,8 +129,8 @@ class DLTMessageHandler(Process):
         :returns: True if connected, False otherwise
         :rtype: bool
         """
-        logger.debug("Creating DLTClient (ip_address='%s', logfile='%s')", self._ip_address, self._filename)
-        self._client = DLTClient(servIP=self._ip_address, verbose=self.verbose)
+        logger.debug("Creating DLTClient (ip_address='%s', logfile='%s')", self._ip_address, self._port, self._filename)
+        self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
         connected = self._client.connect(self.timeout)
         if connected:
             logger.info("DLTClient connected to %s", self._client.servIP)
