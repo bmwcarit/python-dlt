@@ -283,7 +283,7 @@ class MessageMode(object):
             return "[{}] {}".format(self.ctrl_service_id_string,
                                     ctypes.string_at(self.databuffer, self.datasize)[4:256+4])
 
-        buf = ctypes.create_string_buffer('\000' * DLT_DAEMON_TEXTSIZE)
+        buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
         dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
         return buf.value
 
