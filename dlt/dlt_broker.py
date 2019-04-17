@@ -32,6 +32,7 @@ class DLTBroker(object):
         self.filter_queue = Queue()
         self.message_queue = Queue()
         kwargs["ip_address"] = ip_address
+        kwargs["port"] = port
         kwargs["timeout"] = kwargs.get("timeout", DLT_CLIENT_TIMEOUT)
         self.msg_handler = DLTMessageHandler(self.filter_queue, self.message_queue, self.mp_stop_flag, kwargs)
         self.context_handler = DLTContextHandler(self.filter_queue, self.message_queue)
