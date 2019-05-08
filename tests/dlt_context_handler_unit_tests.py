@@ -1,11 +1,18 @@
 # Copyright (C) 2016. BMW Car IT GmbH. All rights reserved.
 
+import multiprocessing
 import time
 import unittest
+import six
 
-from Queue import Queue
+if six.PY2:
+    from Queue import Queue
+    from multiprocessing.queues import Empty
+else:
+    from queue import Queue
+    from queue import Empty
+
 from multiprocessing.queues import Queue as mp_queue
-from multiprocessing.queues import Empty
 
 from dlt.dlt_broker_handlers import DLTContextHandler
 from .utils import create_messages, stream_one, stream_multiple
@@ -14,8 +21,13 @@ from .utils import create_messages, stream_one, stream_multiple
 class TestDLTContextHandler(unittest.TestCase):
 
     def setUp(self):
-        self.filter_queue = mp_queue()
-        self.message_queue = mp_queue()
+        if six.PY2:
+            self.filter_queue = mp_queue()
+            self.message_queue = mp_queue()
+        else:
+            self.ctx = multiprocessing.get_context()
+            self.filter_queue = mp_queue(ctx=self.ctx)
+            self.message_queue = mp_queue(ctx=self.ctx)
         self.handler = DLTContextHandler(self.filter_queue, self.message_queue)
 
     def test_init(self):

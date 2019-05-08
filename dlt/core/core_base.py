@@ -245,7 +245,7 @@ class MessageMode(object):
         """
         text = ""
         if self.is_mode_non_verbose and not self.is_type_control and self.noar == 0:
-            buf = ctypes.create_string_buffer('\000' * DLT_DAEMON_TEXTSIZE)
+            buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
             dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
             return "[{}] #{}#".format(self.message_id_string, buf.value[4:])
 
@@ -267,16 +267,16 @@ class MessageMode(object):
                         text += "connected"
                     else:
                         text += "unknown"
-                    text += " " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE)
+                    text += " " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE).decode("utf8")
                 else:
                     text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5]
             elif service_id == DLT_SERVICE_ID_TIMEZONE:
                 text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5]
             else:
-                buf = ctypes.create_string_buffer('\000' * DLT_DAEMON_TEXTSIZE)
+                buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
                 dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII,
                                            self.verbose)
-                text += buf.value
+                text += buf.value.decode("utf8")
             return text
 
         if self.type == DLT_TYPE_CONTROL:
@@ -285,7 +285,7 @@ class MessageMode(object):
 
         buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
         dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
-        return buf.value
+        return buf.value.decode("utf8")
 
 
 class cDltStorageHeader(ctypes.Structure):

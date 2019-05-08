@@ -11,6 +11,7 @@ import struct
 import re
 import time
 import threading
+import six
 
 from dlt.core import (
     dltlib, DLT_ID_SIZE, DLT_HTYP_WEID, DLT_HTYP_WSID, DLT_HTYP_WTMS, DLT_HTYP_UEH, DLT_RETURN_OK,
@@ -86,7 +87,7 @@ class DLTFilter(ctypes.Structure):
 
     def add(self, apid, ctid):
         """Add new filter pair"""
-        if dltlib.dlt_filter_add(ctypes.byref(self), apid or "", ctid or "", self.verbose) == -1:
+        if dltlib.dlt_filter_add(ctypes.byref(self), apid or b"", ctid or b"", self.verbose) == -1:
             if self.counter >= DLT_FILTER_MAX:
                 logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)
             else:
@@ -97,7 +98,7 @@ class DLTFilter(ctypes.Structure):
         apids = [ctypes.string_at(entry[:DLT_ID_SIZE]) for entry in self.apid]
         ctids = [ctypes.string_at(entry[:DLT_ID_SIZE]) for entry in self.ctid]
 
-        return str(zip(apids[:self.counter], ctids[:self.counter]))
+        return repr(list(zip(apids[:self.counter], ctids[:self.counter])))
 
     def __nonzero__(self):
         """Truth value testing"""
@@ -317,7 +318,10 @@ class DLTMessage(cDLTMessage, MessageMode):
     @staticmethod
     def extract_sort_data(data):
         """Extract timestamp, message length, apid, ctid from a bytestring in DLT storage format (speed optimized)"""
-        htyp_data = ord(data[16])
+        if six.PY2:
+            htyp_data = ord(data[16])
+        else:
+            htyp_data = data[16]
         len_data = data[19:17:-1]
         len_value = ctypes.cast(len_data, ctypes.POINTER(ctypes.c_ushort)).contents.value + 16
         apid = ""
@@ -337,10 +341,10 @@ class DLTMessage(cDLTMessage, MessageMode):
 
         if htyp_data & DLT_HTYP_UEH:
             apid_base = 38 + bytes_offset  # Typical APID end offset
-            apid = data[apid_base - 4:apid_base].rstrip("\x00")
-            ctid = data[apid_base:apid_base + 4].rstrip("\x00")
+            apid = data[apid_base - 4:apid_base].rstrip(b"\x00")
+            ctid = data[apid_base:apid_base + 4].rstrip(b"\x00")
 
-        return tmsp_value, len_value, apid, ctid
+        return tmsp_value, len_value, apid.decode("utf8"), ctid.decode("utf8")
 
     def __del__(self):
         if self.initialized_as_object is True:
@@ -436,9 +440,9 @@ class DLTMessage(cDLTMessage, MessageMode):
         out = [time.asctime(time.gmtime(self.storage_timestamp))]
         if self.headerextra:
             out.append(self.headerextra.tmsp / 10000.0)
-        out += [self.standardheader.mcnt, self.storageheader.ecu]
+        out += [self.standardheader.mcnt, self.storageheader.ecu.decode("utf8")]
         if self.extendedheader:
-            out += [self.extendedheader.apid, self.extendedheader.ctid]
+            out += [self.extendedheader.apid.decode("utf8"), self.extendedheader.ctid.decode("utf8")]
         if self.headerextra:
             out.append(self.headerextra.seid)
         out += [self.type_string, self.subtype_string, self.mode_string, self.noar, self.payload_decoded]
@@ -454,7 +458,8 @@ class DLTMessage(cDLTMessage, MessageMode):
         :returns: ECU ID
         :rtype: str
         """
-        return self.storageheader.ecu or self.headerextra.ecu
+        b_value = self.storageheader.ecu or self.headerextra.ecu
+        return b_value.decode("utf8")
 
     @cached_property
     def mcnt(self):
@@ -490,7 +495,7 @@ class DLTMessage(cDLTMessage, MessageMode):
         :returns: Application ID
         :rtype: str
         """
-        return self.extendedheader.apid if self.extendedheader else ""
+        return self.extendedheader.apid.decode("utf-8") if self.extendedheader else ""
 
     @cached_property
     def ctid(self):
@@ -499,14 +504,14 @@ class DLTMessage(cDLTMessage, MessageMode):
         :returns: Context ID
         :rtype: str
         """
-        return self.extendedheader.ctid if self.extendedheader else ""
+        return self.extendedheader.ctid.decode("utf-8") if self.extendedheader else ""
 
     @cached_property
     def noar(self):
         """Get the number of arguments
 
         :returns: Context ID
-        :rtype: str
+        :rtype: int
         """
         if self.use_extended_header and self.is_mode_verbose:
             return self.extendedheader.noar
@@ -588,7 +593,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
             raise RuntimeError("Could not initialize DLTFile")
         self._iter_index = 0
         self.corrupt_msg_count = 0
-        self.filename = kwords.pop("filename", None)
+        self.filename = kwords.pop("filename", None).encode("utf-8")
         self.indexed = False
         self.end = False
         self.live_run = kwords.pop("is_live", False)
@@ -616,7 +621,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
             fobj.seek(last_position)
             buf = fobj.read(1024)
             while buf:
-                found = buf.find("DLT\x01")
+                found = buf.find(b"DLT\x01")
                 if found != -1:
                     return last_position + found
                 last_position = fobj.tell()
@@ -832,6 +837,9 @@ class DLTClient(cDltClient):
     verbose = 0
 
     def __init__(self, **kwords):
+        if six.PY3 and "servIP" in kwords:
+            servip = kwords.pop("servIP")
+            kwords.update({"servIP": servip.encode("utf8")})
         self.verbose = kwords.pop("verbose", 0)
         if dltlib.dlt_client_init(ctypes.byref(self), self.verbose) == -1:
             raise RuntimeError("Could not initialize DLTClient")
