@@ -31,6 +31,7 @@ class TestDLTMessageHandler(unittest.TestCase):
         self.client_cfg = {"ip_address": "127.0.0.1",
                            "filename": "/dev/null",
                            "verbose": 0,
+                           "port": "1234"
                            }
         self.stop_event = Event()
         self.handler = DLTMessageHandler(self.filter_queue, self.message_queue, self.stop_event, self.client_cfg)
