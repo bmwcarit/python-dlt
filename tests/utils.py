@@ -117,7 +117,7 @@ def create_messages(stream, from_file=False):
         return client.read_message()
 
     _, tmpname = tempfile.mkstemp()
-    tmpfile = open(tmpname, "w")
+    tmpfile = open(tmpname, "wb")
     tmpfile.write(stream)
     tmpfile.flush()
     tmpfile.seek(0)

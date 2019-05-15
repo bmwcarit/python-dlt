@@ -205,13 +205,13 @@ class TestsPayload(object):
         msg = create_messages(stream_with_params, from_file=True)[0]
         payload = msg.payload
         assert_equal(len(payload), msg.noar)
-        assert_equal(payload[0], "CLevelMonitor::notification() => commandType")
+        assert_equal(payload[0], b"CLevelMonitor::notification() => commandType")
         assert_equal(payload[1], 3)
-        assert_equal(payload[2], "deviceId")
+        assert_equal(payload[2], b"deviceId")
         assert_equal(payload[3], 5)
-        assert_equal(payload[4], "value")
+        assert_equal(payload[4], b"value")
         assert_equal(payload[5], 4074)
-        assert_equal(payload[6], "simulation status")
+        assert_equal(payload[6], b"simulation status")
         assert_equal(payload[7], 0)
         assert_raises(IndexError, payload.__getitem__, 8)
 
