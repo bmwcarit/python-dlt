@@ -129,7 +129,7 @@ class DLTMessageHandler(Process):
         :returns: True if connected, False otherwise
         :rtype: bool
         """
-        logger.debug("Creating DLTClient (ip_address='%s', logfile='%s')", self._ip_address, self._port, self._filename)
+        logger.debug("Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')", self._ip_address, self._port, self._filename)
         self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
         connected = self._client.connect(self.timeout)
         if connected:

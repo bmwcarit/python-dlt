@@ -257,7 +257,7 @@ class MessageMode(object):
             service_id = self.ctrl_service_id
 
             if self.ctrl_service_id == DLT_SERVICE_ID_GET_SOFTWARE_VERSION:
-                text += ctypes.string_at(self.databuffer, self.datasize)[9:]
+                text += ctypes.string_at(self.databuffer, self.datasize)[9:].decode("utf8")
             elif self.ctrl_service_id == DLT_SERVICE_ID_CONNECTION_INFO:
                 if self.datasize == ctypes.sizeof(cDltServiceConnectionInfo):
                     conn_info = cDltServiceConnectionInfo.from_buffer(bytearray(self.databuffer[:self.datasize]))
@@ -269,19 +269,21 @@ class MessageMode(object):
                         text += "unknown"
                     text += " " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE).decode("utf8")
                 else:
-                    text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5]
+                    text += ctypes.string_at(self.databuffer, self.datasize)[5: 256 + 5].decode("utf8")
             elif service_id == DLT_SERVICE_ID_TIMEZONE:
-                text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5]
+                text += ctypes.string_at(self.databuffer, self.datasize)[5: 256 + 5].decode("utf8")
             else:
                 buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
-                dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII,
-                                           self.verbose)
+                dltlib.dlt_message_payload(
+                    ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
                 text += buf.value.decode("utf8")
             return text
 
         if self.type == DLT_TYPE_CONTROL:
-            return "[{}] {}".format(self.ctrl_service_id_string,
-                                    ctypes.string_at(self.databuffer, self.datasize)[4:256+4])
+            return "[{}] {}".format(
+                self.ctrl_service_id_string,
+                ctypes.string_at(self.databuffer, self.datasize)[4: 256 + 4].decode("utf8"),
+            )
 
         buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
         dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
