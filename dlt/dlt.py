@@ -30,6 +30,10 @@ except:  # pylint: disable=bare-except
     pass
 
 MAX_LOG_IN_ROW = 3
+# Return value for DLTFilter.add() - exceeded maximum number of filters
+MAX_FILTER_REACHED = 1
+# Return value for DLTFilter.add() - specified filter already exists
+REPEATED_FILTER = 2
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -90,8 +94,11 @@ class DLTFilter(ctypes.Structure):
         if dltlib.dlt_filter_add(ctypes.byref(self), apid or b"", ctid or b"", self.verbose) == -1:
             if self.counter >= DLT_FILTER_MAX:
                 logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)
+                return MAX_FILTER_REACHED
             else:
                 logger.debug("Filter ('%s', '%s') already exists", apid, ctid)
+                return REPEATED_FILTER
+        return 0
 
     def __repr__(self):
         """return the 'official' string representation of an object"""
