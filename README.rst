@@ -6,9 +6,15 @@ primarily created for use with BMW's test execution framework. However,
 the implementation is independent and the API makes few assumptions about
 the intended use.
 
-Note: This is only tested with libdlt versions 2.15 and 2.16, later versions
+Note 1: This is only tested with libdlt versions 2.15 and 2.16, later versions
 might require adaptations. Also only GENIVI DLT daemon produced traces have
 been tested.
+
+**Note 2**: Currently python 3 execution is possible with the caveat that need
+to preload libtcmalloc_minimal (from google-perftools). Otherwise you may run
+into memory corruption issues.
+
+>>> export LD_PRELOAD="/usr/lib/libtcmalloc_minimal.so.4"
 
 Design
 ------
