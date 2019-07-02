@@ -25,7 +25,7 @@ def parse_args():
 def dlt_receive(options):
     """Receive DLT messages via DLTBroker"""
     logger.info("Creating DLTBroker instance")
-    broker = DLTBroker(ip_address=bytes(options.host), filename=options.file)
+    broker = DLTBroker(ip_address=options.host, filename=options.file)
 
     logger.info("Starting DLTBroker")
     broker.start()  # start the loop

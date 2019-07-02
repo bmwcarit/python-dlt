@@ -843,7 +843,7 @@ class DLTClient(cDltClient):
     verbose = 0
 
     def __init__(self, **kwords):
-        if six.PY3 and "servIP" in kwords:
+        if six.PY3 and "servIP" in kwords and isinstance(kwords["servIP"], six.string_types):
             servip = kwords.pop("servIP")
             kwords.update({"servIP": servip.encode("utf8")})
         self.verbose = kwords.pop("verbose", 0)
