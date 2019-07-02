@@ -95,9 +95,8 @@ class DLTFilter(ctypes.Structure):
             if self.counter >= DLT_FILTER_MAX:
                 logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)
                 return MAX_FILTER_REACHED
-            else:
-                logger.debug("Filter ('%s', '%s') already exists", apid, ctid)
-                return REPEATED_FILTER
+            logger.debug("Filter ('%s', '%s') already exists", apid, ctid)
+            return REPEATED_FILTER
         return 0
 
     def __repr__(self):
@@ -417,7 +416,7 @@ class DLTMessage(cDLTMessage, MessageMode):
 
         if not isinstance(other, dict):
             raise TypeError("other must be instance of mgu_dlt.dlt.DLTMessage, mgu_dlt.dlt.DLTFilter or a dictionary"
-                            " found: %s", type(other))
+                            " found: {}".format(type(other)))
 
         other = other.copy()
         apid = other.get("apid", None)
@@ -435,7 +434,7 @@ class DLTMessage(cDLTMessage, MessageMode):
             msg_val = getattr(self, key, "")
             if not msg_val:
                 return False
-            elif isinstance(val, re._pattern_type):  # pylint: disable=protected-access
+            if isinstance(val, re._pattern_type):  # pylint: disable=protected-access
                 if not val.search(msg_val):
                     return False
             elif msg_val != val:
@@ -785,7 +784,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self._open_file()
 
         found_data = False
-        while not self.stop_reading.isSet() or corruption_check_try:
+        while not self.stop_reading.isSet() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
             os_stat = os.stat(self.filename)
             mtime = os_stat.st_mtime
 

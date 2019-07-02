@@ -25,6 +25,8 @@ class TestCoreStructures(object):
             cls.size_map.update({'cDltClient': 80})
         elif api_version == '2.16.0':
             cls.size_map.update({'cDltClient': 96})
+        elif api_version == '2.17.0':
+            cls.size_map.update({'cDltClient': 96})
 
 
     def test_sizeof(self):

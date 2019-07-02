@@ -1,4 +1,4 @@
 coverage
 nose
-pep8
+pycodestyle
 pylint

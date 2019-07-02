@@ -135,7 +135,7 @@ class MessageMode(object):
     @property
     def mode_string(self):
         """Returns 'verbose' if DLTMessage is set to verbose mode. Otherwise 'non-verbose'"""
-        return self.is_mode_verbose and "verbose" or "non-verbose"
+        return "verbose" if self.is_mode_verbose else "non-verbose"
 
     @property
     def is_mode_non_verbose(self):
@@ -165,7 +165,7 @@ class MessageMode(object):
     def message_id_string(self):
         """Returns string representation of message ID"""
         mid = self.message_id
-        return (mid >= 0 and mid <= len(qDltCtrlServiceId)) and qDltCtrlServiceId[mid] or ""
+        return qDltCtrlServiceId[mid] if (0 <= mid <= len(qDltCtrlServiceId)) else ""
 
     @property
     def ctrl_service_id(self):
@@ -182,13 +182,13 @@ class MessageMode(object):
         sid = self.ctrl_service_id
         if sid == DLT_SERVICE_ID_UNREGISTER_CONTEXT:
             return "unregister_context"
-        elif sid == DLT_SERVICE_ID_CONNECTION_INFO:
+        if sid == DLT_SERVICE_ID_CONNECTION_INFO:
             return "connection_info"
-        elif sid == DLT_SERVICE_ID_TIMEZONE:
+        if sid == DLT_SERVICE_ID_TIMEZONE:
             return "timezone"
-        elif sid == DLT_SERVICE_ID_MARKER:
+        if sid == DLT_SERVICE_ID_MARKER:
             return "marker"
-        return sid <= 20 and qDltCtrlServiceId[sid] or ""
+        return qDltCtrlServiceId[sid] if sid <= 20 else ""
 
     @property
     def ctrl_return_type(self):
@@ -201,7 +201,7 @@ class MessageMode(object):
     @property
     def ctrl_return_type_string(self):
         """Returns string representation of ctrl type"""
-        return self.ctrl_return_type <= 8 and qDltCtrlReturnType[self.ctrl_return_type] or ""
+        return qDltCtrlReturnType[self.ctrl_return_type] if self.ctrl_return_type <= 8 else ""
 
     @property
     def type(self):
@@ -212,7 +212,7 @@ class MessageMode(object):
     def type_string(self):
         """Returns string representation of the message type"""
         mtype = self.type
-        return (mtype >= 0 and mtype <= 7) and qDltMessageType[mtype] or ""
+        return qDltMessageType[mtype] if (0 <= mtype <= 7) else ""
 
     @property
     def subtype(self):
@@ -226,14 +226,13 @@ class MessageMode(object):
         msubtype = self.subtype
 
         if mtype == DLT_TYPE_LOG:
-            return (msubtype >= 0 and msubtype <= 7) and qDltLogInfo[msubtype] or ""
-        elif mtype == DLT_TYPE_APP_TRACE:
-            return (msubtype >= 0 and msubtype <= 7) and qDltTraceType[msubtype] or ""
-        elif mtype == DLT_TYPE_NW_TRACE:
-            return (msubtype >= 0 and msubtype <= 7) and qDltNwTraceType[msubtype] or ""
-        elif mtype == DLT_TYPE_CONTROL:
-            return (msubtype >= 0 and msubtype <= 7) and qDltControlType[msubtype] or ""
-
+            return qDltLogInfo[msubtype] if (0 <= msubtype <= 7) else ""
+        if mtype == DLT_TYPE_APP_TRACE:
+            return qDltTraceType[msubtype] if (0 <= msubtype <= 7) else ""
+        if mtype == DLT_TYPE_NW_TRACE:
+            return qDltNwTraceType[msubtype] if (0 <= msubtype <= 7) else ""
+        if mtype == DLT_TYPE_CONTROL:
+            return qDltControlType[msubtype] if (0 <= msubtype <= 7) else ""
         return ""
 
     @property

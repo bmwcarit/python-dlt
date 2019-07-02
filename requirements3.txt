@@ -1,4 +1,4 @@
 mock
-pep8
+pycodestyle
 pylint
 subprocess32
