@@ -973,7 +973,12 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # this will raise a socket.timeout exception which the caller is
         # expected to handle (possibly by attempting a reconnect)
         # pylint: disable=protected-access
-        ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+        try:
+            ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+        except os.error as os_exc:
+            logger.error("[%s]: DLTLib closed connected socket", os_exc)
+            return False
+
         if not ready_to_read:
             # - implies that the other end has called close()/shutdown()
             # (ie: clean disconnect)
