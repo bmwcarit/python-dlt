@@ -1,0 +1,11 @@
+language: generic
+
+services:
+  - docker
+
+before_script:
+  - make build-image
+
+script:
+  - make lint
+  - make unit-test
