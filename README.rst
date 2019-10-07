@@ -6,9 +6,10 @@ primarily created for use with BMW's test execution framework. However,
 the implementation is independent and the API makes few assumptions about
 the intended use.
 
-Note: This is only tested with libdlt versions 2.15 to 2.17, later versions
-might require adaptations. Also only GENIVI DLT daemon produced traces have
-been tested.
+Note: This is only tested with libdlt version 2.18.4, later versions
+might require adaptations. The package will not support previous libdlt
+versions from python-dlt v2.0. Also only GENIVI DLT daemon produced traces
+have been tested.
 
 
 Design
@@ -82,7 +83,7 @@ Here are examples of some interesting ways to use these classes:
     >>> from dlt import dlt
     >>> c = dlt.DLTClient(servIP="127.0.0.1")   # Only initializes the client
     >>> c.connect()                      # ...this connects
-    >>> dlt.dltlib.dlt_receiver_receive_socket(ctypes.byref(client.receiver)) # receives data
+    >>> dlt.dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)  # receives data
     >>> c.read_message()                 # reads a single DLTMessage from received data  and returns it
     >>>
     >>> # more interesting is the DLTBroker class...
