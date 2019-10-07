@@ -3,8 +3,8 @@ import setuptools
 
 setuptools.setup(
     name="dlt",
-    version="1.0",
     description="Python DLT implementation for DLT",
+    use_scm_version=True,
     url="https://github.com/bmwcarit/python-dlt",
     author="BMW Car IT",
     license="MPL 2.0",
@@ -21,6 +21,7 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=["tests", "tests.*"]),
     install_requires=[],
     zip_safe=False,
+    test_suite="tests",
     entry_points={
         'console_scripts': [
             'py_dlt_receive = dlt.py_dlt_receive:main',

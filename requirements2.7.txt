@@ -1,2 +1,3 @@
 mock
 subprocess32
+pylint==1.9.5

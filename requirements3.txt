@@ -1,4 +1,1 @@
-mock
-pycodestyle
-pylint
-subprocess32
+pylint==2.4.2
