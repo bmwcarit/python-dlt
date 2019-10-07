@@ -1,5 +1,6 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """DLT client helpers"""
+import six
 
 
 class LimitCondition(object):
@@ -52,3 +53,12 @@ class ContinuousnessChecker(object):
         else:
             # first message of current type
             self._counter[key] = message.mcnt
+
+
+def bytes_to_str(byte_or_str):
+    """Return string from bytes"""
+    if six.PY3:
+        if isinstance(byte_or_str, bytes):
+            return byte_or_str.decode('utf8')
+
+    return str(byte_or_str)

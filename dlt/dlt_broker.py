@@ -7,7 +7,7 @@ import logging
 
 from multiprocessing import Event, Queue
 
-from dlt.dlt_broker_handlers import DLTContextHandler, DLTMessageHandler
+from dlt.dlt_broker_handlers import DLT_DAEMON_TCP_PORT, DLTContextHandler, DLTMessageHandler
 
 DLT_CLIENT_TIMEOUT = 5
 
@@ -18,7 +18,7 @@ class DLTBroker(object):
     """DLT Broker class manages receiving and filtering of DLT Messages
     """
 
-    def __init__(self, ip_address, port=3490, use_proxy=False, **kwargs):
+    def __init__(self, ip_address, port=DLT_DAEMON_TCP_PORT, use_proxy=False, **kwargs):
         """Initialize the DLT Broker
 
         :param str ip_address: IP address of the DLT Daemon

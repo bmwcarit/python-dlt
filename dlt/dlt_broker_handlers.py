@@ -12,7 +12,7 @@ from threading import Thread, Event, Lock
 from multiprocessing import Process
 from multiprocessing.queues import Empty
 
-from dlt.dlt import DLTClient, py_dlt_client_main_loop
+from dlt.dlt import DLTClient, DLT_DAEMON_TCP_PORT, py_dlt_client_main_loop
 
 DLT_CLIENT_TIMEOUT = 5
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -115,7 +115,7 @@ class DLTMessageHandler(Process):
         self.context_map = defaultdict(list)
 
         self._ip_address = client_cfg["ip_address"]
-        self._port = client_cfg["port"]
+        self._port = client_cfg.get("port", DLT_DAEMON_TCP_PORT)
         self._filename = client_cfg.get("filename")
         self.verbose = client_cfg.get("verbose", 0)
         self.timeout = client_cfg.get("timeout", DLT_CLIENT_TIMEOUT)

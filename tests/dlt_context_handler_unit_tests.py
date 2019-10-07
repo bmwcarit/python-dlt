@@ -1,18 +1,18 @@
 # Copyright (C) 2016. BMW Car IT GmbH. All rights reserved.
-
-import multiprocessing
 import time
 import unittest
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
+
 import six
 
+from multiprocessing.queues import Empty
 if six.PY2:
-    from Queue import Queue
-    from multiprocessing.queues import Empty
+    from multiprocessing.queues import Queue as mp_queue
 else:
-    from queue import Queue
-    from queue import Empty
-
-from multiprocessing.queues import Queue as mp_queue
+    from multiprocessing import Queue as mp_queue
 
 from dlt.dlt_broker_handlers import DLTContextHandler
 from .utils import create_messages, stream_one, stream_multiple
@@ -21,13 +21,8 @@ from .utils import create_messages, stream_one, stream_multiple
 class TestDLTContextHandler(unittest.TestCase):
 
     def setUp(self):
-        if six.PY2:
-            self.filter_queue = mp_queue()
-            self.message_queue = mp_queue()
-        else:
-            self.ctx = multiprocessing.get_context()
-            self.filter_queue = mp_queue(ctx=self.ctx)
-            self.message_queue = mp_queue(ctx=self.ctx)
+        self.filter_queue = mp_queue()
+        self.message_queue = mp_queue()
         self.handler = DLTContextHandler(self.filter_queue, self.message_queue)
 
     def test_init(self):
@@ -190,7 +185,7 @@ class TestDLTContextHandler(unittest.TestCase):
         try:
             self.assertNotIn(queue_id, self.handler.context_map)
             # allow some time for the thread to read all messages
-            time.sleep(0.01)
+            time.sleep(0.5)
             self.assertTrue(self.handler.message_queue.empty())
             self.assertTrue(queue.empty())
         finally:

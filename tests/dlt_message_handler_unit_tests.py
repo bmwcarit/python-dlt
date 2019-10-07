@@ -1,18 +1,16 @@
 # Copyright (C) 2016. BMW Car IT GmbH. All rights reserved.
-
 import os
 import time
 import unittest
+from multiprocessing.queues import Empty
+from multiprocessing import Event
+
 import six
 
-from multiprocessing.queues import Queue
 if six.PY2:
-    from multiprocessing.queues import Empty
+    from multiprocessing.queues import Queue
 else:
-    from queue import Empty
-    from multiprocessing import get_context
-
-from multiprocessing import Event
+    from multiprocessing import Queue
 
 from dlt.dlt_broker_handlers import DLTMessageHandler
 from .utils import create_messages, stream_multiple
@@ -21,17 +19,12 @@ from .utils import create_messages, stream_multiple
 class TestDLTMessageHandler(unittest.TestCase):
 
     def setUp(self):
-        if six.PY2:
-            self.filter_queue = Queue()
-            self.message_queue = Queue()
-        else:
-            self.ctx = get_context()
-            self.filter_queue = Queue(ctx=self.ctx)
-            self.message_queue = Queue(ctx=self.ctx)
-        self.client_cfg = {"ip_address": "127.0.0.1",
-                           "filename": "/dev/null",
+        self.filter_queue = Queue()
+        self.message_queue = Queue()
+        self.client_cfg = {"ip_address": b"127.0.0.1",
+                           "filename": b"/dev/null",
                            "verbose": 0,
-                           "port": "1234"
+                           "port": "1234",
                            }
         self.stop_event = Event()
         self.handler = DLTMessageHandler(self.filter_queue, self.message_queue, self.stop_event, self.client_cfg)
