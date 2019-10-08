@@ -1,11 +1,14 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """Basic unittests for DLT messages"""
-
 import io
 import pickle
 import re
 
-from mock import patch, PropertyMock
+try:
+    from mock import patch, PropertyMock
+except ImportError:
+    from unittest.mock import patch, PropertyMock
+
 from nose.tools import *
 
 from dlt.dlt import DLTMessage
@@ -50,19 +53,23 @@ class TestsDLTMessageUnit(object):
         msg1 = create_messages(stream_one)
 
         assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"))))
-        assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"), payload_decoded=re.compile(r".connection_info ok."))))
-        assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"), payload_decoded=re.compile(r".connection_info ok."))))
-        assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"), payload_decoded=re.compile(r".*info ok."))))
+        assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"),
+                                      payload_decoded=re.compile(r".connection_info ok."))))
+        assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"),
+                                      payload_decoded=re.compile(r".connection_info ok."))))
+        assert_true(msg1.compare(dict(apid="DA1", ctid=re.compile(r"D.*"),
+                                      payload_decoded=re.compile(r".*info ok."))))
         assert_true(msg1.compare(dict(apid="DA1", ctid="DC1", payload_decoded=re.compile(r".*info ok."))))
         assert_true(msg1.compare(dict(apid=re.compile(r"D."))))
         assert_true(msg1.compare(dict(apid=re.compile(r"D.+"))))
         assert_true(msg1.compare(dict(apid=re.compile(r"D."))))
         assert_false(msg1.compare(dict(apid=re.compile(r"X."))))
 
-
     def test_compare_regexp_nsm(self):
-        nsm = create_messages(io.BytesIO(b'5\x00\x00 MGHS\xdd\xf6e\xca&\x01NSM\x00DC1\x00\x02\x0f\x00\x00\x00\x02\x00\x00\x00\x00'))
-        nsma = create_messages(io.BytesIO(b'5\x00\x00 MGHS\xdd\xf6e\xca&\x01NSMADC1\x00\x02\x0f\x00\x00\x00\x02\x00\x00\x00\x00'))
+        nsm = create_messages(io.BytesIO(b'5\x00\x00 MGHS\xdd\xf6e\xca&\x01NSM\x00DC1\x00\x02\x0f\x00\x00'
+                                         b'\x00\x02\x00\x00\x00\x00'))
+        nsma = create_messages(io.BytesIO(b'5\x00\x00 MGHS\xdd\xf6e\xca&\x01NSMADC1\x00\x02\x0f\x00\x00'
+                                          b'\x00\x02\x00\x00\x00\x00'))
 
         assert_true(nsm.compare(dict(apid=re.compile("^NSM$"))))
         assert_false(nsma.compare(dict(apid=re.compile("^NSM$"))))
@@ -75,7 +82,7 @@ class TestsDLTMessageUnit(object):
 
     @raises(Exception)
     def test_compare_regexp_throw(self):
-        assert_true(nsm.compare(dict(apid="NSM"), regexp=True))
+        assert_true(nsm.compare(dict(apid=b"NSM"), regexp=True))
 
     def test_compare_regexp_benoit(self):
         msg1 = create_messages(msg_benoit, from_file=True)[0]
@@ -95,10 +102,10 @@ class TestsDLTMessageUnit(object):
 
     def test_compare_quick_return(self):
         msg = create_messages(stream_one)
-        other = dict(apid='DA1', ctid='XX', ecuid='FOO')
+        other = dict(apid=b'DA1', ctid=b'XX', ecuid=b'FOO')
 
         with patch('dlt.dlt.DLTMessage.ecuid', new_callable=PropertyMock) as ecuid:
-            ecuid.return_value = 'FOO'
+            ecuid.return_value = b'FOO'
             assert_false(msg.compare(other))
             ecuid.assert_not_called()
 

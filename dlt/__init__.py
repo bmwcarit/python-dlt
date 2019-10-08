@@ -5,7 +5,7 @@ import collections
 import logging
 import subprocess
 if not hasattr(subprocess, "TimeoutExpired"):
-    import subprocess32 as subprocess
+    import subprocess32 as subprocess  # pylint: disable=import-error
 
 
 LOGGER = logging.getLogger(__name__)
