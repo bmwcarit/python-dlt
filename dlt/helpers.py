@@ -59,6 +59,6 @@ def bytes_to_str(byte_or_str):
     """Return string from bytes"""
     if six.PY3:
         if isinstance(byte_or_str, bytes):
-            return byte_or_str.decode('utf8')
+            return byte_or_str.decode('utf8', errors="replace")
 
     return str(byte_or_str)
