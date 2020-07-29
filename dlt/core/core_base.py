@@ -30,13 +30,15 @@ DLT_RETURN_TRUE = 1
 DLT_CLIENT_MODE_UNDEFINED = -1
 DLT_CLIENT_MODE_TCP = 0
 DLT_CLIENT_MODE_SERIAL = 1
-DLT_CLIENT_MODE_UNIX = 2
+DLT_CLIENT_MODE_UDP_MULTICAST = 2
+DLT_CLIENT_MODE_UNIX = 3
 
 # DltReceiverType from dlt_common.h
 # DltReceiverType is an enum type. These definitions could not be found in shared library (libdlt.so) so
 # the enum values are defined here.
 DLT_RECEIVE_SOCKET = 0
-DLT_RECEIVE_FD = 1
+DLT_RECEIVE_UDP_SOCKET = 1
+DLT_RECEIVE_FD = 2
 
 DLT_TYPE_LOG = 0x00  # Log message type
 DLT_TYPE_APP_TRACE = 0x01  # Application trace message type

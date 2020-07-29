@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import ctypes
+import ipaddress as ip
 import logging
 import os
 import re
@@ -15,9 +16,9 @@ import threading
 import six
 
 from dlt.core import (
-    dltlib, DLT_ID_SIZE, DLT_HTYP_WEID, DLT_HTYP_WSID, DLT_HTYP_WTMS, DLT_HTYP_UEH, DLT_RETURN_OK,
-    DLT_RETURN_ERROR, DLT_RETURN_TRUE, DLT_FILTER_MAX, DLT_MESSAGE_ERROR_OK, cDltExtendedHeader,
-    cDltClient, MessageMode, cDLTMessage, cDltStorageHeader, cDltStandardHeader,
+    dltlib, DLT_CLIENT_MODE_UDP_MULTICAST, DLT_ID_SIZE, DLT_HTYP_WEID, DLT_HTYP_WSID, DLT_HTYP_WTMS,
+    DLT_HTYP_UEH, DLT_RETURN_OK, DLT_RETURN_ERROR, DLT_RETURN_TRUE, DLT_FILTER_MAX, DLT_MESSAGE_ERROR_OK,
+    cDltExtendedHeader, cDltClient, MessageMode, cDLTMessage, cDltStorageHeader, cDltStandardHeader,
     DLT_TYPE_INFO_UINT, DLT_TYPE_INFO_SINT, DLT_TYPE_INFO_STRG, DLT_TYPE_INFO_SCOD,
     DLT_TYPE_INFO_TYLE, DLT_TYPE_INFO_VARI, DLT_TYPE_INFO_RAWD,
     DLT_SCOD_ASCII, DLT_SCOD_UTF8, DLT_TYLE_8BIT, DLT_TYLE_16BIT, DLT_TYLE_32BIT, DLT_TYLE_64BIT,
@@ -863,6 +864,7 @@ class DLTClient(cDltClient):
     verbose = 0
 
     def __init__(self, **kwords):
+        self.is_udp_multicast = False
         self.verbose = kwords.pop("verbose", 0)
         if dltlib.dlt_client_init(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
             raise RuntimeError("Could not initialize DLTClient")
@@ -874,6 +876,25 @@ class DLTClient(cDltClient):
             ip_init_state = dltlib.dlt_client_set_server_ip(ctypes.byref(self), ctypes.create_string_buffer(serv_ip))
             if ip_init_state == DLT_RETURN_ERROR:
                 raise RuntimeError("Could not initialize servIP for DLTClient")
+
+        if ip.ip_address(serv_ip.decode("utf8")).is_multicast:
+            self.is_udp_multicast = True
+            if "hostIP" in kwords:
+                host_ip = kwords.pop("hostIP")
+                if isinstance(host_ip, str):
+                    host_ip = host_ip.encode('utf8')
+                ip_init_state = dltlib.dlt_client_set_host_if_address(
+                    ctypes.byref(self),
+                    ctypes.create_string_buffer(host_ip)
+                )
+                if ip_init_state == DLT_RETURN_ERROR:
+                    raise RuntimeError("Could not initialize multicast address for DLTClient")
+
+            set_mode_state = dltlib.dlt_client_set_mode(ctypes.byref(self),
+                                                        DLT_CLIENT_MODE_UDP_MULTICAST)
+
+            if set_mode_state == DLT_RETURN_ERROR:
+                raise RuntimeError("Could not initialize socket mode for DLTClient")
 
         # attribute to hold a reference to the connected socket in case
         # we created a connection with a timeout (via python, as opposed
@@ -905,35 +926,40 @@ class DLTClient(cDltClient):
         """
         connected = None
         error_count = 0
-        if timeout:
-            end_time = time.time() + timeout
-            while time.time() < end_time:
-                timeout_remaining = max(end_time - time.time(), 1) if timeout else None
-                try:
-                    self._connected_socket = socket.create_connection((ctypes.string_at(self.servIP), self.port),
-                                                                      timeout=timeout_remaining)
-                except IOError as exc:
-                    if error_count < MAX_LOG_IN_ROW:
-                        logger.debug("DLT client connect failed to connect to %s:%s : %s",
-                                     self.servIP, self.port, exc)
-                    error_count += 1
-                    time.sleep(1)
+        if not self.is_udp_multicast:
+            if timeout:
+                end_time = time.time() + timeout
+                while time.time() < end_time:
+                    timeout_remaining = max(end_time - time.time(), 1) if timeout else None
+                    try:
+                        self._connected_socket = socket.create_connection((ctypes.string_at(self.servIP), self.port),
+                                                                          timeout=timeout_remaining)
+                    except IOError as exc:
+                        if error_count < MAX_LOG_IN_ROW:
+                            logger.debug("DLT client connect failed to connect to %s:%s : %s",
+                                         self.servIP, self.port, exc)
+                        error_count += 1
+                        time.sleep(1)
 
-                if self._connected_socket:
-                    # pylint: disable=attribute-defined-outside-init
-                    self.sock = ctypes.c_int(self._connected_socket.fileno())
-                    # - also init the receiver to replicate
-                    # dlt_client_connect() behavior
-                    connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver), self.sock, DLT_CLIENT_RCVBUFSIZE)
-                    break
+                    if self._connected_socket:
+                        # pylint: disable=attribute-defined-outside-init
+                        self.sock = ctypes.c_int(self._connected_socket.fileno())
+                        # - also init the receiver to replicate
+                        # dlt_client_connect() behavior
+                        connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver), self.sock, DLT_CLIENT_RCVBUFSIZE)
+                        break
+            else:
+                connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
+                # - create a python socket object so that we can detect
+                # connection loss in the main_loop below as described at
+                # http://stefan.buettcher.org/cs/conn_closed.html
+                self._connected_socket = socket.fromfd(self.sock, socket.AF_INET6, socket.SOCK_STREAM)
+            if error_count > MAX_LOG_IN_ROW:
+                logger.debug("Surpressed %d messages for failed connection attempts", error_count - MAX_LOG_IN_ROW)
+
         else:
             connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
-            # - create a python socket object so that we can detect
-            # connection loss in the main_loop below as described at
-            # http://stefan.buettcher.org/cs/conn_closed.html
-            self._connected_socket = socket.fromfd(self.sock, socket.AF_INET6, socket.SOCK_STREAM)
-        if error_count > MAX_LOG_IN_ROW:
-            logger.debug("Surpressed %d messages for failed connection attempts", error_count - MAX_LOG_IN_ROW)
+
         return connected == DLT_RETURN_OK
 
     def disconnect(self):
@@ -985,6 +1011,23 @@ class DLTClient(cDltClient):
         """Get the mode"""
         return getattr(self, "mode", getattr(super(DLTClient, self), "serial_mode", 0))
 
+    @ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(DLTMessage), ctypes.c_void_p)
+    def msg_callback(msg, data):
+        if msg == None:
+            print("NULL message in callback")
+            return -1
+        if msg.contents.p_standardheader.contents.htyp & DLT_HTYP_WEID:
+            dltlib.dlt_set_storageheader(msg.contents.p_storageheader, msg.contents.headerextra.ecu)
+        else:
+            dltlib.dlt_set_storageheader(msg.contents.p_storageheader, ctypes.c_char_p(""))
+
+        print(msg.contents)
+        return 0
+
+    def client_loop(self):
+        dltlib.dlt_client_register_message_callback(self.msg_callback)
+        dltlib.dlt_client_main_loop(ctypes.byref(self), None, self.verbose)
+
 
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callback=None):
@@ -1001,17 +1044,18 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # this will raise a socket.timeout exception which the caller is
         # expected to handle (possibly by attempting a reconnect)
         # pylint: disable=protected-access
-        try:
-            ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
-        except OSError as os_exc:
-            logger.error("[%s]: DLTLib closed connected socket", os_exc)
-            return False
+        if not client.is_udp_multicast:
+            try:
+                ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+            except OSError as os_exc:
+                logger.error("[%s]: DLTLib closed connected socket", os_exc)
+                return False
 
-        if not ready_to_read:
-            # - implies that the other end has called close()/shutdown()
-            # (ie: clean disconnect)
-            logger.debug("connection terminated, returning")
-            return False
+            if not ready_to_read:
+                # - implies that the other end has called close()/shutdown()
+                # (ie: clean disconnect)
+                logger.debug("connection terminated, returning")
+                return False
 
         # - check if stop flag has been set (end of loop)
         if callback and not callback(None):

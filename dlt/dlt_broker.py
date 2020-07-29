@@ -3,6 +3,7 @@
 to all registered queues"""
 from __future__ import print_function, absolute_import
 
+import ipaddress as ip
 import logging
 
 from multiprocessing import Event, Queue
@@ -21,11 +22,13 @@ class DLTBroker(object):
     def __init__(self, ip_address, port=DLT_DAEMON_TCP_PORT, use_proxy=False, **kwargs):
         """Initialize the DLT Broker
 
-        :param str ip_address: IP address of the DLT Daemon
+        :param str ip_address: IP address of the DLT Daemon. Defaults to TCP connection, unless a multicast address is
+        used. In that case an UDP multicast connection will be used
         :param str post: Port of the DLT Daemon
         :param bool use_proxy: Ignored - compatibility option
         :param **kwargs: All other args passed to DLTMessageHandler
         """
+
         # - handlers init
         self.mp_stop_flag = Event()
 
@@ -43,8 +46,9 @@ class DLTBroker(object):
 
     def start(self):
         """DLTBroker main worker method"""
-        logger.debug("Starting DLTBroker with parameters: use_proxy=%s, ip_address=%s, port=%s, filename=%s",
-                     False, self._ip_address, self._port, self._filename)
+        logger.debug(
+            "Starting DLTBroker with parameters: use_proxy=%s, ip_address=%s, port=%s, filename=%s, multicast=%s",
+            False, self._ip_address, self._port, self._filename, ip.ip_address(self._ip_address).is_multicast)
 
         self.msg_handler.start()
         self.context_handler.start()
