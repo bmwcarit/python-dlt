@@ -36,9 +36,6 @@ def get_version(loaded_lib):
 def get_api_specific_file(version):
     """Return specific version api filename"""
     version_tuple = [int(num) for num in version.split('.')]
-    if version_tuple[-1] != 0:
-        # The mirror version does not exist, try to truncate
-        version_tuple = version_tuple[:-1] + [0]
     name = 'core_{}.py'.format("".join((str(num) for num in version_tuple)))
     if not os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
         raise ImportError("No module file: {}".format(name))
