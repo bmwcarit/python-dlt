@@ -877,24 +877,24 @@ class DLTClient(cDltClient):
             if ip_init_state == DLT_RETURN_ERROR:
                 raise RuntimeError("Could not initialize servIP for DLTClient")
 
-        if ip.ip_address(serv_ip.decode("utf8")).is_multicast:
-            self.is_udp_multicast = True
-            if "hostIP" in kwords:
-                host_ip = kwords.pop("hostIP")
-                if isinstance(host_ip, str):
-                    host_ip = host_ip.encode('utf8')
-                ip_init_state = dltlib.dlt_client_set_host_if_address(
-                    ctypes.byref(self),
-                    ctypes.create_string_buffer(host_ip)
-                )
-                if ip_init_state == DLT_RETURN_ERROR:
-                    raise RuntimeError("Could not initialize multicast address for DLTClient")
+            if ip.ip_address(serv_ip.decode("utf8")).is_multicast:
+                self.is_udp_multicast = True
+                if "hostIP" in kwords:
+                    host_ip = kwords.pop("hostIP")
+                    if isinstance(host_ip, str):
+                        host_ip = host_ip.encode('utf8')
+                    ip_init_state = dltlib.dlt_client_set_host_if_address(
+                        ctypes.byref(self),
+                        ctypes.create_string_buffer(host_ip)
+                    )
+                    if ip_init_state == DLT_RETURN_ERROR:
+                        raise RuntimeError("Could not initialize multicast address for DLTClient")
 
-            set_mode_state = dltlib.dlt_client_set_mode(ctypes.byref(self),
-                                                        DLT_CLIENT_MODE_UDP_MULTICAST)
+                set_mode_state = dltlib.dlt_client_set_mode(ctypes.byref(self),
+                                                            DLT_CLIENT_MODE_UDP_MULTICAST)
 
-            if set_mode_state == DLT_RETURN_ERROR:
-                raise RuntimeError("Could not initialize socket mode for DLTClient")
+                if set_mode_state == DLT_RETURN_ERROR:
+                    raise RuntimeError("Could not initialize socket mode for DLTClient")
 
         # attribute to hold a reference to the connected socket in case
         # we created a connection with a timeout (via python, as opposed
@@ -946,7 +946,9 @@ class DLTClient(cDltClient):
                         self.sock = ctypes.c_int(self._connected_socket.fileno())
                         # - also init the receiver to replicate
                         # dlt_client_connect() behavior
-                        connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver), self.sock, DLT_CLIENT_RCVBUFSIZE)
+                        connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
+                                                             self.sock,
+                                                             DLT_CLIENT_RCVBUFSIZE)
                         break
             else:
                 connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
@@ -1012,8 +1014,9 @@ class DLTClient(cDltClient):
         return getattr(self, "mode", getattr(super(DLTClient, self), "serial_mode", 0))
 
     @ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(DLTMessage), ctypes.c_void_p)
-    def msg_callback(msg, data):
-        if msg == None:
+    def msg_callback(msg, data):  # pylint: disable=no-self-argument
+        """Implements a simple callback that prints a dlt message received"""
+        if msg is None:
             print("NULL message in callback")
             return -1
         if msg.contents.p_standardheader.contents.htyp & DLT_HTYP_WEID:
@@ -1025,6 +1028,7 @@ class DLTClient(cDltClient):
         return 0
 
     def client_loop(self):
+        """Executes native dlt_client_main_loop() after registering msg_callback method as callback"""
         dltlib.dlt_client_register_message_callback(self.msg_callback)
         dltlib.dlt_client_main_loop(ctypes.byref(self), None, self.verbose)
 

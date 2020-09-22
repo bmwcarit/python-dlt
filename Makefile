@@ -1,4 +1,5 @@
-LIBDLT_VERSION=2.18.4
+# Non released dlt-daemon version based on 2.18.5
+LIBDLT_VERSION=33fbad18c814e13bd7ba2053525d8959fee437d1
 
 IMAGE=python-dlt/python-dlt-unittest
 TAG?=latest

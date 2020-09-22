@@ -34,11 +34,18 @@ def get_version(loaded_lib):
 
 
 def get_api_specific_file(version):
-    """Return specific version api filename"""
+    """Return specific version api filename, if not found fallback to first major version release"""
     version_tuple = [int(num) for num in version.split('.')]
     name = 'core_{}.py'.format("".join((str(num) for num in version_tuple)))
-    if not os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
-        raise ImportError("No module file: {}".format(name))
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
+        return name
+
+    # The minor version does not exist, try to truncate
+    if version_tuple[-1] != 0:
+        version_tuple = version_tuple[:-1] + [0]
+        name = 'core_{}.py'.format("".join((str(num) for num in version_tuple)))
+        if not os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
+            raise ImportError("No module file: {}".format(name))
 
     return name
 
@@ -46,11 +53,12 @@ def get_api_specific_file(version):
 def check_libdlt_version(api_ver):
     """Check the version compatibility.
 
-    python-dlt now only supports to run libdlt 2.18.0 or above.
+    python-dlt now only supports to run libdlt 2.18.5 or above.
     """
     ver_info = tuple(int(num) for num in api_ver.split('.'))
-    if ver_info < (2, 18):
-        raise ImportError("python-dlt only supports libdlt v2.18.0 or above")
+    if ver_info < (2, 18, 5):
+        raise ImportError("python-dlt only supports libdlt \
+        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above")
 
 
 API_VER = get_version(dltlib)

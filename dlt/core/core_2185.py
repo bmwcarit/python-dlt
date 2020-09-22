@@ -16,7 +16,8 @@ DLT_RECEIVE_SOCKET = 0
 DLT_RECEIVE_UDP_SOCKET = 1
 DLT_RECEIVE_FD = 2
 
-class sockaddr_in(ctypes.Structure):
+
+class sockaddr_in(ctypes.Structure):  # pylint: disable=invalid-name
     """Auxiliary definition for cDltReceiver. Defined in netinet/in.h header"""
     _fields_ = [("sa_family", ctypes.c_ushort),  # sin_family
                 ("sin_port", ctypes.c_ushort),
@@ -33,11 +34,12 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
         int32_t lastBytesRcvd;    /**< bytes received in last receive call */
         int32_t bytesRcvd;        /**< received bytes */
         int32_t totalBytesRcvd;   /**< total number of received bytes */
-        char *buffer;         /**< pointer to receiver buffer */
-        char *buf;            /**< pointer to position within receiver buffer */
-        char *backup_buf;     /** pointer to the buffer with partial messages if any **/
-        int fd;               /**< connection handle */
+        char *buffer;             /**< pointer to receiver buffer */
+        char *buf;                /**< pointer to position within receiver buffer */
+        char *backup_buf;         /** pointer to the buffer with partial messages if any **/
+        int fd;                   /**< connection handle */
         int32_t buffersize;       /**< size of receiver buffer */
+        struct sockaddr_in addr;  /**< socket address information */
     } DltReceiver;
     """
     _fields_ = [("lastBytesRcvd", ctypes.c_int32),
