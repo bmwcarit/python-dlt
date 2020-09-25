@@ -146,7 +146,7 @@ class TestsDLTMessageUnit(object):
         assert_equal(msg.ctid, "CPUS")
         assert_equal(msg.ecuid, "MGHS")
         assert_equal(msg.tmsp, 3.8088)
-        assert_equal(msg.payload_decoded, "4 online cores\n")
+        assert_equal(msg.payload_decoded, "4 online cores ")
 
     def test_sort_data_control(self):
         data = (

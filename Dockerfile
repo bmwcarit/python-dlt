@@ -1,6 +1,6 @@
 FROM debian:buster as builder
 
-ARG LIBDLT_VERSION=2.18.4
+ARG LIBDLT_VERSION=v2.18.4
 
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -10,7 +10,7 @@ RUN apt-get update \
 # Install libdlt
 RUN git clone https://github.com/GENIVI/dlt-daemon \
     && cd /dlt-daemon \
-    && git checkout v${LIBDLT_VERSION} \
+    && git checkout ${LIBDLT_VERSION} \
     && cd /dlt-daemon \
     && cmake CMakeLists.txt \
     && make \

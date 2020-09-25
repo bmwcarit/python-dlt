@@ -21,26 +21,27 @@ class TestCoreStructures(unittest.TestCase):
                          'cDltStandardHeaderExtra': 12,
                          'cDltExtendedHeader': 10,
                          'cDLTMessage': 120,
-                         'cDltReceiver': 48,
-                         'cDltClient': 104}
+                         'cDltReceiver': 64,
+                         'cDltClient': 128}
 
     def test_sizeof(self):
         for clsname, expected in self.size_map.items():
-            acutal = ctypes.sizeof(getattr(dlt.core, clsname))
-            self.assertEqual(acutal, expected,
+            actual = ctypes.sizeof(getattr(dlt.core, clsname))
+            self.assertEqual(actual, expected,
                              msg="v{0}, sizeof {1}: {2} != {3}".format(
-                                 dlt.core.get_version(dlt.core.dltlib), clsname, acutal, expected))
+                                 dlt.core.get_version(dlt.core.dltlib), clsname, actual, expected))
 
 
 class TestImportSpecificVersion(unittest.TestCase):
 
     def setUp(self):
         self.original_api_version = dlt.core.API_VER
-        self.version_answer = b"2.18.4"
-        self.version_str = (b"DLT Package Version: 2.18.4 STABLE, Package Revision: v2.18.4, "
-                            b"build on Sep 20 2019 10:03:53\n+SYSTEMD -SYSTEMD_WATCHDOG -TEST -SHM\n")
-        self.version_filename = "core_2180.py"
-        self.version_truncate_str = "2.18.42"
+        self.version_answer = b"2.18.5"
+        self.version_str = (b"DLT Package Version: 2.18.5 STABLE, Package Revision: v2.18.5_5_g33fbad1, "
+                            b"build on Sep  2 2020 11:55:50\n-SYSTEMD -SYSTEMD_WATCHDOG -TEST -SHM\n")
+        self.version_filename = "core_2185.py"
+        self.version_truncate_str = "2.18.5"
+        self.version_truncate_filename = "core_2180.py"
 
         dlt.core.API_VER = None
 
@@ -67,13 +68,13 @@ class TestImportSpecificVersion(unittest.TestCase):
             self.assertEqual(filename, self.version_filename)
 
     def test_get_api_specific_file_not_found(self):
-        with patch.object(os.path, "exists", return_value=False):
+        with patch.object(os.path, "exists", side_effect=[False, False]):
             with self.assertRaises(ImportError) as err_cm:
                 filename = dlt.core.get_api_specific_file(self.version_answer.decode())
 
-            self.assertEqual(str(err_cm.exception), "No module file: {}".format(self.version_filename))
+            self.assertEqual(str(err_cm.exception), "No module file: {}".format(self.version_truncate_filename))
 
     def test_get_api_specific_file_truncate_minor_version(self):
-        with patch.object(os.path, "exists", return_value=True):
+        with patch.object(os.path, "exists", side_effect=[False, True]):
             filename = dlt.core.get_api_specific_file(self.version_truncate_str)
-            self.assertEqual(filename, self.version_filename)
+            self.assertEqual(filename, self.version_truncate_filename)

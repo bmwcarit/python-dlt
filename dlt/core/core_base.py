@@ -31,6 +31,7 @@ DLT_CLIENT_MODE_UNDEFINED = -1
 DLT_CLIENT_MODE_TCP = 0
 DLT_CLIENT_MODE_SERIAL = 1
 DLT_CLIENT_MODE_UNIX = 2
+DLT_CLIENT_MODE_UDP_MULTICAST = 3
 
 # DltReceiverType from dlt_common.h
 # DltReceiverType is an enum type. These definitions could not be found in shared library (libdlt.so) so

@@ -6,8 +6,8 @@ primarily created for use with BMW's test execution framework. However,
 the implementation is independent and the API makes few assumptions about
 the intended use.
 
-Note: This is only tested with libdlt version 2.18.4, later versions
-might require adaptations. The package will not support previous libdlt
+Note: This is only tested with libdlt version v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1),
+later versions might require adaptations. The package will not support previous libdlt
 versions from python-dlt v2.0. Also only GENIVI DLT daemon produced traces
 have been tested.
 
