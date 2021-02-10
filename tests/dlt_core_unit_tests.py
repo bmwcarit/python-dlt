@@ -21,8 +21,8 @@ class TestCoreStructures(unittest.TestCase):
                          'cDltStandardHeaderExtra': 12,
                          'cDltExtendedHeader': 10,
                          'cDLTMessage': 120,
-                         'cDltReceiver': 64,
-                         'cDltClient': 128}
+                         'cDltReceiver': 72,
+                         'cDltClient': 136}
 
     def test_sizeof(self):
         for clsname, expected in self.size_map.items():
@@ -36,11 +36,11 @@ class TestImportSpecificVersion(unittest.TestCase):
 
     def setUp(self):
         self.original_api_version = dlt.core.API_VER
-        self.version_answer = b"2.18.5"
-        self.version_str = (b"DLT Package Version: 2.18.5 STABLE, Package Revision: v2.18.5_5_g33fbad1, "
-                            b"build on Sep  2 2020 11:55:50\n-SYSTEMD -SYSTEMD_WATCHDOG -TEST -SHM\n")
-        self.version_filename = "core_2185.py"
-        self.version_truncate_str = "2.18.5"
+        self.version_answer = b"2.18.6"
+        self.version_str = (b"DLT Package Version: 2.18.6 STABLE, Package Revision: v2.18.6_5_22715aec, "
+                            b"build on Jan  6 2021 11:55:50\n-SYSTEMD -SYSTEMD_WATCHDOG -TEST -SHM\n")
+        self.version_filename = "core_2186.py"
+        self.version_truncate_str = "2.18.6"
         self.version_truncate_filename = "core_2180.py"
 
         dlt.core.API_VER = None
