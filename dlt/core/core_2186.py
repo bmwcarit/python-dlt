@@ -38,8 +38,8 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
         char *buf;                /**< pointer to position within receiver buffer */
         char *backup_buf;         /** pointer to the buffer with partial messages if any **/
         int fd;                   /**< connection handle */
-        int32_t buffersize;       /**< size of receiver buffer */
         DltReceiverType  type;    /**< type of connection handle */
+        int32_t buffersize;       /**< size of receiver buffer */
         struct sockaddr_in addr;  /**< socket address information */
     } DltReceiver;
     """
