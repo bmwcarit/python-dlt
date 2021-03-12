@@ -39,7 +39,7 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
         char *backup_buf;         /** pointer to the buffer with partial messages if any **/
         int fd;                   /**< connection handle */
         DltReceiverType  type;    /**< type of connection handle */
-        int32_t buffersize;       /**< size of receiver buffer */
+        uint32_t buffersize;       /**< size of receiver buffer */
         struct sockaddr_in addr;  /**< socket address information */
     } DltReceiver;
     """
@@ -51,7 +51,7 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
                 ("backup_buf", ctypes.POINTER(ctypes.c_char)),
                 ("fd", ctypes.c_int),
                 ("type", ctypes.c_int),
-                ("buffersize", ctypes.c_int32),
+                ("buffersize", ctypes.c_uint32),
                 ("addr", sockaddr_in)]
 
 
