@@ -22,7 +22,7 @@ from dlt.core import (
     DLT_TYPE_INFO_UINT, DLT_TYPE_INFO_SINT, DLT_TYPE_INFO_STRG, DLT_TYPE_INFO_SCOD,
     DLT_TYPE_INFO_TYLE, DLT_TYPE_INFO_VARI, DLT_TYPE_INFO_RAWD,
     DLT_SCOD_ASCII, DLT_SCOD_UTF8, DLT_TYLE_8BIT, DLT_TYLE_16BIT, DLT_TYLE_32BIT, DLT_TYLE_64BIT,
-    DLT_TYLE_128BIT, DLT_DAEMON_TCP_PORT, DLT_CLIENT_RCVBUFSIZE,
+    DLT_TYLE_128BIT, DLT_DAEMON_TCP_PORT, DLT_RECEIVE_BUFSIZE,
     DLT_RECEIVE_SOCKET,
 )
 from dlt.helpers import bytes_to_str
@@ -957,7 +957,7 @@ class DLTClient(cDltClient):
                         connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
                                                              self.sock,
                                                              receiver_type,
-                                                             DLT_CLIENT_RCVBUFSIZE)
+                                                             DLT_RECEIVE_BUFSIZE)
                         if connected == DLT_RETURN_OK:
                             connected = self.ready_to_read()
                         break
