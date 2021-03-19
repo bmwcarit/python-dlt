@@ -127,3 +127,40 @@ def create_messages(stream, from_file=False):
 
     msgs = load(tmpname)
     return msgs
+
+
+class MockDLTMessage(object):
+    """Mock DLT message for dltlyse plugin testing"""
+    def __init__(self, ecuid="MGHS", apid="SYS", ctid="JOUR", sid="958", payload="", tmsp=0.0, sec=0, msec=0, mcnt=0):
+        self.ecuid = ecuid
+        self.apid = apid
+        self.ctid = ctid
+        self.sid = sid
+        self.payload = payload
+        self.tmsp = tmsp
+        self.mcnt = mcnt
+        self.storageheader = MockStorageHeader(sec=sec, msec=msec)
+
+    def compare(self, target):
+        """Compare DLT Message to a dictionary"""
+        return target == {k: v for k, v in self.__dict__.items() if k in target.keys()}
+
+    @property
+    def payload_decoded(self):
+        """Fake payload decoding"""
+        return self.payload
+
+    @property
+    def storage_timestamp(self):
+        """Fake storage timestamp"""
+        return float("{}.{}".format(self.storageheader.seconds, self.storageheader.microseconds))
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
+class MockStorageHeader(object):
+    """Mock DLT storage header for plugin testing"""
+    def __init__(self, msec=0, sec=0):
+        self.microseconds = msec
+        self.seconds = sec

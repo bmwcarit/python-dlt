@@ -35,6 +35,10 @@ build-image:
 	docker build --build-arg LIBDLT_VERSION=${LIBDLT_VERSION} \
 		--tag ${IMAGE}:${LIBDLT_VERSION} .
 
+.PHONY: bash
+bash:
+	${DK_CMD} -it ${IMAGE}:${TAG}
+
 .PHONY: clean
 clean:
 ifeq (,$(wildcard /.dockerenv))
