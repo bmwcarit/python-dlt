@@ -878,6 +878,7 @@ class DLTClient(cDltClient):
                 raise RuntimeError("Could not initialize servIP for DLTClient")
 
             if ip.ip_address(serv_ip.decode("utf8")).is_multicast:
+                logger.info("Initializing DLTClient using UDP")
                 self.is_udp_multicast = True
                 if "hostIP" in kwords:
                     host_ip = kwords.pop("hostIP")
@@ -892,7 +893,7 @@ class DLTClient(cDltClient):
 
                 set_mode_state = dltlib.dlt_client_set_mode(ctypes.byref(self),
                                                             DLT_CLIENT_MODE_UDP_MULTICAST)
-
+                logger.info("DLTClient using UDP set mode state: %s", set_mode_state)
                 if set_mode_state == DLT_RETURN_ERROR:
                     raise RuntimeError("Could not initialize socket mode for DLTClient")
 
@@ -927,6 +928,7 @@ class DLTClient(cDltClient):
         connected = None
         error_count = 0
         if not self.is_udp_multicast:
+            logger.info("Connecting DLTClient using TCP Connection")
             if timeout:
                 end_time = time.time() + timeout
                 while time.time() < end_time:
@@ -960,8 +962,10 @@ class DLTClient(cDltClient):
                 logger.debug("Surpressed %d messages for failed connection attempts", error_count - MAX_LOG_IN_ROW)
 
         else:
+            logger.info("Connecting DLTClient using UDP Connection")
             connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
 
+        logger.info("DLT Connection return: %s", connected)
         return connected == DLT_RETURN_OK
 
     def disconnect(self):
