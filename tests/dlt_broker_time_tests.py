@@ -1,5 +1,5 @@
 # Copyright (C) 2021. BMW Car IT GmbH. All rights reserved.
-"""Test DLTTimeHandler"""
+"""Test DLTBroker with enabling dlt_time"""
 from contextlib import contextmanager
 import itertools
 import time

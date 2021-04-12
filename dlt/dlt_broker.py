@@ -93,7 +93,7 @@ class DLTBroker(object):
 
     def stop(self):
         """Stop the broker"""
-        logger.info("Stopping DLTContextHandler, DLTTimeHandler and DLTMessageHandler")
+        logger.info("Stopping DLTContextHandler and DLTMessageHandler")
 
         logger.debug("Stop DLTMessageHandler")
         self.mp_stop_flag.set()
