@@ -239,6 +239,8 @@ class DLTMessage(cDLTMessage, MessageMode):
     # object is not initialized if the message is loaded from a file
     initialized_as_object = False
 
+    re_pattern_type = type(re.compile(r"type"))
+
     def __init__(self, *args, **kwords):
         self.initialized_as_object = True
         self.verbose = kwords.pop("verbose", 0)
@@ -429,15 +431,13 @@ class DLTMessage(cDLTMessage, MessageMode):
             raise TypeError("other must be instance of mgu_dlt.dlt.DLTMessage, mgu_dlt.dlt.DLTFilter or a dictionary"
                             " found: {}".format(type(other)))
 
-        re_pattern_type = type(re.compile(r"type"))
-
         other = other.copy()
         apid = other.get("apid", None)
-        if apid and not isinstance(apid, re_pattern_type) and self.apid != apid:
+        if apid and not isinstance(apid, self.re_pattern_type) and self.apid != apid:
             return False
 
         ctid = other.get("ctid", None)
-        if ctid and not isinstance(ctid, re_pattern_type) and self.ctid != ctid:
+        if ctid and not isinstance(ctid, self.re_pattern_type) and self.ctid != ctid:
             return False
 
         for key, val in other.items():
@@ -447,7 +447,7 @@ class DLTMessage(cDLTMessage, MessageMode):
             msg_val = getattr(self, key, b"")
             if not msg_val:
                 return False
-            if isinstance(val, re_pattern_type):
+            if isinstance(val, self.re_pattern_type):
                 if not val.search(msg_val):
                     return False
             elif msg_val != val:

@@ -3,19 +3,60 @@
 filtering DLT messages
 """
 from __future__ import absolute_import
+from collections import defaultdict
+import ctypes
 import logging
+from multiprocessing import Lock, Process, Value
+from multiprocessing.queues import Empty
 import socket
 import time
-
-from collections import defaultdict
-from threading import Thread, Event, Lock
-from multiprocessing import Process
-from multiprocessing.queues import Empty
+from threading import Thread, Event
 
 from dlt.dlt import DLTClient, DLT_DAEMON_TCP_PORT, py_dlt_client_main_loop
 
 DLT_CLIENT_TIMEOUT = 5
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+
+class DLTTimeValue(object):
+    """Create a share memory to pass the timestamp between processes
+
+    The type of dlt time is float (4 bytes). There are several ways to send
+    the value between DLTMessageHandler (it's a process) and DLTBroker. Since
+    DLTMessageHandler has to send the value many times every second, choosing a
+    lightweight solution is must.
+
+    khiz678 studied and evaluated the following solutions for the problem.
+      - multiprocessing.Queue (Queue in the following discussion)
+      - multiprocessing.Pipe (Pipe in the following discussion)
+      - multiprocessing.Value (Value in the following discussion)
+
+    Value is our final solution. Queue's implementation is based on Pipe (in
+    cpython). If the solution is based on Queue or Pipe, it needs another
+    thread in DLTBroker process to receive and write the value to a local
+    variable. The solution based on Value does not have such problem, only
+    assigns the value to the shared memory directly.
+
+    khiz678 also did a simple benchamrk for the Value soltuion. It could
+    receive more than 100000 timestamps per seocnd.  It's twice faster than
+    Pipe's implementation.
+    """
+    def __init__(self, default_value=0.0):
+        self._timestamp_mem = Value(ctypes.c_float, default_value)
+
+    @property
+    def timestamp(self):
+        """Get the seconds from 1970/1/1 0:00:00
+
+        :rtype: float
+        """
+        with self._timestamp_mem.get_lock():
+            return self._timestamp_mem.value
+
+    @timestamp.setter
+    def timestamp(self, new_timestamp):
+        with self._timestamp_mem.get_lock():
+            self._timestamp_mem.value = new_timestamp
 
 
 class DLTContextHandler(Thread):
@@ -105,7 +146,7 @@ class DLTMessageHandler(Process):
     them on the messages queue.
     """
 
-    def __init__(self, filter_queue, message_queue, mp_stop_event, client_cfg):
+    def __init__(self, filter_queue, message_queue, mp_stop_event, client_cfg, dlt_time_value=None):
         self.filter_queue = filter_queue
         self.message_queue = message_queue
         self.mp_stop_flag = mp_stop_event
@@ -121,6 +162,8 @@ class DLTMessageHandler(Process):
         self.timeout = client_cfg.get("timeout", DLT_CLIENT_TIMEOUT)
         self._client = None
         self.tracefile = None
+
+        self._dlt_time_value = dlt_time_value
 
     def _client_connect(self):
         """Create a new DLTClient
@@ -163,13 +206,25 @@ class DLTMessageHandler(Process):
         """
         self._process_filter_queue()
 
-        if message is not None and not (message.apid == "" and message.ctid == ""):
-            for filters, queue_ids in self.context_map.items():
-                if filters in [(message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid)]:
-                    for queue_id in queue_ids:
-                        if self.message_queue.full():
-                            logger.error("message_queue is full ! put() on this queue will block")
-                        self.message_queue.put((queue_id, message))
+        if message and (message.apid != "" or message.ctid != ""):
+            # Dispatch the message
+            msg_ctx = ((message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid))
+            qids = (
+                queue_id
+                for filters, queue_ids in self.context_map.items()
+                for queue_id in queue_ids
+                if filters in msg_ctx
+            )
+            for queue_id in qids:
+                if self.message_queue.full():
+                    logger.error("message_queue is full ! put() on this queue will block")
+
+                self.message_queue.put((queue_id, message))
+
+            # Send the message's timestamp
+            if self._dlt_time_value:
+                self._dlt_time_value.timestamp = message.storage_timestamp
+
         return not self.mp_stop_flag.is_set()
 
     def run(self):
