@@ -51,16 +51,22 @@ def test_start_stop_dlt_broker_without_dlt_time():
         assert_is_none(broker._dlt_time_value)
 
 
-def test_dlt_broker_get_dlt_time():
+@parameterized(
+    [
+        (42, 42, 42.42),  # normal test case
+        (1618993559, 7377682, 1618993559.7377682),  # big value. The value will be truncated when type is not double
+    ]
+)
+def test_dlt_broker_get_dlt_time(input_sec, input_msec, expected_value):
     """Test to get time from DLTBroker"""
 
     def handle(client, callback=None, *args, **kwargs):
-        return callback(MockDLTMessage(payload="test_payload", sec=42, msec=42))
+        return callback(MockDLTMessage(payload="test_payload", sec=input_sec, msec=input_msec))
 
     with dlt_broker(handle) as broker:
         time.sleep(0.01)
 
-    assert abs(broker.dlt_time() - 42.42) <= 0.01
+    eq_(broker.dlt_time(), expected_value)
 
 
 def test_dlt_broker_get_latest_dlt_time():
@@ -81,8 +87,4 @@ def test_dlt_broker_get_latest_dlt_time():
             time_vals.add(broker.dlt_time())
             time.sleep(0.01)
 
-    expected_times = [0.0, 43.42, 44.42, 45.42]
-    error_value = (
-        abs(dlt_value - expected_value) <= 0.01 for dlt_value, expected_value in zip(sorted(time_vals), expected_times)
-    )
-    assert all(error_value)
+    eq_(sorted(time_vals), [0.0, 43.42, 44.42, 45.42])
