@@ -42,7 +42,7 @@ class DLTTimeValue(object):
     Pipe's implementation.
     """
     def __init__(self, default_value=0.0):
-        self._timestamp_mem = Value(ctypes.c_float, default_value)
+        self._timestamp_mem = Value(ctypes.c_double, default_value)
 
     @property
     def timestamp(self):
