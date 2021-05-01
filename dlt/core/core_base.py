@@ -90,6 +90,7 @@ DLT_TYLE_128BIT = 0x00000005
 
 DLT_DAEMON_TCP_PORT = 3490
 DLT_CLIENT_RCVBUFSIZE = 10024  # Size of client receive buffer from dlt_client_cfg.h
+DLT_RECEIVE_BUFSIZE = 65535  # Size of client receive buffer from dlt_common.h
 
 # dlt-viever/qdltbase.cpp
 qDltMessageType = [b"log", b"app_trace", b"nw_trace", b"control", b"", b"", b"", b""]
