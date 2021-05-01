@@ -954,10 +954,17 @@ class DLTClient(cDltClient):
                         self.sock = ctypes.c_int(self._connected_socket.fileno())
                         # - also init the receiver to replicate
                         # dlt_client_connect() behavior
-                        connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
-                                                             self.sock,
-                                                             receiver_type,
-                                                             DLT_RECEIVE_BUFSIZE)
+                        from dlt.core import API_VER as API_VER_STR
+                        API_VER = tuple(int(num) for num in API_VER_STR.split('.'))
+                        if API_VER < (2, 18, 6):
+                            connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
+                                                                 self.sock,
+                                                                 DLT_CLIENT_RCVBUFSIZE)
+                        else:
+                            connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
+                                                                 self.sock,
+                                                                 receiver_type,
+                                                                 DLT_RECEIVE_BUFSIZE)
                         if connected == DLT_RETURN_OK:
                             connected = self.ready_to_read()
                         break
@@ -1075,7 +1082,12 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # the status of the callback (in the case of dlt_broker, this is
         # the stop_flag Event), this loop will only proceed after the
         # function has returned or terminate when an exception is raised
-        recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver))
+        from dlt.core import API_VER as API_VER_STR
+        API_VER = tuple(int(num) for num in API_VER_STR.split('.'))
+        if API_VER < (2, 18, 6):
+            recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)
+        else:
+            recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver))
         if recv_size <= 0:
             logger.error("Error while reading from socket")
             return False
