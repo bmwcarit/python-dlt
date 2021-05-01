@@ -15,14 +15,26 @@ import dlt
 class TestCoreStructures(unittest.TestCase):
 
     def setUp(self):
-        self.size_map = {'cDltServiceConnectionInfo': 10,
-                         'cDltStorageHeader': 16,
-                         'cDltStandardHeader': 4,
-                         'cDltStandardHeaderExtra': 12,
-                         'cDltExtendedHeader': 10,
-                         'cDLTMessage': 120,
-                         'cDltReceiver': 72,
-                         'cDltClient': 136}
+        from dlt.core import API_VER as API_VER_STR
+        API_VER = tuple(int(num) for num in API_VER_STR.split('.'))
+        if API_VER < (2, 18, 6):
+            self.size_map = {'cDltServiceConnectionInfo': 10,
+                             'cDltStorageHeader': 16,
+                             'cDltStandardHeader': 4,
+                             'cDltStandardHeaderExtra': 12,
+                             'cDltExtendedHeader': 10,
+                             'cDLTMessage': 120,
+                             'cDltReceiver': 64,
+                             'cDltClient': 128}
+        else:
+            self.size_map = {'cDltServiceConnectionInfo': 10,
+                             'cDltStorageHeader': 16,
+                             'cDltStandardHeader': 4,
+                             'cDltStandardHeaderExtra': 12,
+                             'cDltExtendedHeader': 10,
+                             'cDLTMessage': 120,
+                             'cDltReceiver': 72,
+                             'cDltClient': 136}
 
     def test_sizeof(self):
         for clsname, expected in self.size_map.items():
