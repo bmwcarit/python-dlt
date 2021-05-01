@@ -39,7 +39,7 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
         char *backup_buf;         /** pointer to the buffer with partial messages if any **/
         int fd;                   /**< connection handle */
         DltReceiverType  type;    /**< type of connection handle */
-        uint32_t buffersize;       /**< size of receiver buffer */
+        uint32_t buffersize;      /**< size of receiver buffer */
         struct sockaddr_in addr;  /**< socket address information */
     } DltReceiver;
     """
@@ -66,7 +66,7 @@ class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
         int port;              /**< Port for TCP connections (optional) */
         char *serialDevice;    /**< serialDevice Devicename of serial device */
         char *socketPath;      /**< socketPath Unix socket path */
-        char ecuid[4];           /**< ECUiD */
+        char ecuid[4];         /**< ECUiD */
         speed_t baudrate;      /**< baudrate Baudrate of serial interface, as speed_t */
         DltClientMode mode;    /**< mode DltClientMode */
     } DltClient;
