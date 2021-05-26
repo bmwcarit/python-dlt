@@ -206,20 +206,13 @@ class DLTMessageHandler(Process):
         """
         self._process_filter_queue()
 
-        if message and (message.apid != "" or message.ctid != ""):
-            # Dispatch the message
-            msg_ctx = ((message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid))
-            qids = (
-                queue_id
-                for filters, queue_ids in self.context_map.items()
-                for queue_id in queue_ids
-                if filters in msg_ctx
-            )
-            for queue_id in qids:
-                if self.message_queue.full():
-                    logger.error("message_queue is full ! put() on this queue will block")
-
-                self.message_queue.put((queue_id, message))
+        if message is not None and not (message.apid == "" and message.ctid == ""):
+            for filters, queue_ids in self.context_map.items():
+                if filters in [(message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid)]:
+                    for queue_id in queue_ids:
+                        if self.message_queue.full():
+                            logger.error("message_queue is full ! put() on this queue will block")
+                        self.message_queue.put((queue_id, message))
 
             # Send the message's timestamp
             if self._dlt_time_value:
