@@ -1,0 +1,33 @@
+name: python-dlt-ci-actions
+
+on: [push, pull_request]
+
+jobs:
+  run-test-for-python-dlt:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        LIBDLT_VERSION:
+          - "33fbad18c814e13bd7ba2053525d8959fee437d1"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build python-dlt unit test docker image
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          build-args: |
+             LIBDLT_VERSION=${{ matrix.LIBDLT_VERSION }}
+          tags: python-dlt/python-dlt-unittest:${{ matrix.LIBDLT_VERSION }}
+      - name: lint check for the code base
+        uses: addnab/docker-run-action@v3
+        with:
+          image: python-dlt/python-dlt-unittest:${{ matrix.LIBDLT_VERSION }}
+          options: -v ${{ github.workspace }}:/pydlt -w /pydlt
+          run: tox -e lint
+      - name: Run unit test
+        uses: addnab/docker-run-action@v3
+        with:
+          image: python-dlt/python-dlt-unittest:${{ matrix.LIBDLT_VERSION }}
+          options: -v ${{ github.workspace }}:/pydlt -w /pydlt
+          run: tox

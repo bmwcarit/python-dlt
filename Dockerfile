@@ -2,13 +2,15 @@ FROM debian:buster as builder
 
 ARG LIBDLT_VERSION=v2.18.4
 
-RUN apt-get update \
+RUN set -ex \
+    && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y build-essential git cmake libdbus-1-dev cmake-data \
             libdbus-1-dev systemd libsystemd-dev wget curl zlib1g-dev
 
 # Install libdlt
-RUN git clone https://github.com/GENIVI/dlt-daemon \
+RUN set -ex \
+    && git clone https://github.com/GENIVI/dlt-daemon \
     && cd /dlt-daemon \
     && git checkout ${LIBDLT_VERSION} \
     && cd /dlt-daemon \
@@ -21,9 +23,11 @@ FROM debian:buster
 # Install libdlt.so
 COPY --from=builder /usr/local/lib /usr/local/lib
 
-RUN ldconfig
+RUN set -ex \
+    && ldconfig
 
-RUN apt-get update \
+RUN set -ex \
+    && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y python3 python3-pip python2 python2-dev git \
     && pip3 install --no-cache-dir setuptools tox \
