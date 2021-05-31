@@ -165,6 +165,8 @@ class DLTMessageHandler(Process):
 
         self._dlt_time_value = dlt_time_value
 
+        self.enable_debug = Value(ctypes.c_int32, 0)
+
     def _client_connect(self):
         """Create a new DLTClient
 
@@ -184,6 +186,10 @@ class DLTMessageHandler(Process):
         """Check if filters have been added or need to be removed"""
         while not self.filter_queue.empty():
             queue_id, filters, add = self.filter_queue.get_nowait()
+
+            if self.enable_debug.value:
+                logger.info("Yen3 - process_filter_queue: %s, %s, %s", queue_id, filters, add)
+
             if add:
                 for apid_ctid in filters:
                     self.context_map[apid_ctid].append(queue_id)
@@ -192,7 +198,7 @@ class DLTMessageHandler(Process):
                     for apid_ctid in filters:
                         self.context_map[apid_ctid].remove(queue_id)
                         if not self.context_map[apid_ctid]:
-                            del(self.context_map[apid_ctid])
+                            del self.context_map[apid_ctid]
                 except (KeyError, ValueError):
                     # - queue_id already removed or not inserted
                     pass
@@ -207,6 +213,9 @@ class DLTMessageHandler(Process):
         self._process_filter_queue()
 
         if message is not None and not (message.apid == "" and message.ctid == ""):
+            if self.enable_debug.value:
+                logger.info("Yen3 - handle message: %s, %s", message.storage_timestamp, message)
+
             for filters, queue_ids in self.context_map.items():
                 if filters in [(message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid)]:
                     for queue_id in queue_ids:

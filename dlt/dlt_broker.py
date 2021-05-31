@@ -135,3 +135,13 @@ class DLTBroker(object):
             return self._dlt_time_value.timestamp
 
         raise RuntimeError("Getting dlt time function is not enabled")
+
+    def enable_debug(self):
+        """Enable to print debug messages"""
+        self.msg_handler.enable_debug = 1
+        logger.info("Yen3 - enable debug")
+
+    def disable_debug(self):
+        """Disable to print debug messages"""
+        self.msg_handler.enable_debug = 0
+        logger.info("Yen3 - disable debug")
