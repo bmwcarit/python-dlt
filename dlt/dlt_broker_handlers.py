@@ -187,7 +187,7 @@ class DLTMessageHandler(Process):
         while not self.filter_queue.empty():
             queue_id, filters, add = self.filter_queue.get_nowait()
 
-            if self.enable_debug.value:
+            if self.enable_debug.value > 0:
                 logger.info("Yen3 - process_filter_queue: %s, %s, %s", queue_id, filters, add)
 
             if add:
@@ -213,7 +213,7 @@ class DLTMessageHandler(Process):
         self._process_filter_queue()
 
         if message is not None and not (message.apid == "" and message.ctid == ""):
-            if self.enable_debug.value:
+            if self.enable_debug.value > 0:
                 logger.info("Yen3 - handle message: %s, %s", message.storage_timestamp, message)
 
             for filters, queue_ids in self.context_map.items():

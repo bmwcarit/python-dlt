@@ -138,10 +138,10 @@ class DLTBroker(object):
 
     def enable_debug(self):
         """Enable to print debug messages"""
-        self.msg_handler.enable_debug = 1
+        self.msg_handler.enable_debug.value = 1
         logger.info("Yen3 - enable debug")
 
     def disable_debug(self):
         """Disable to print debug messages"""
-        self.msg_handler.enable_debug = 0
+        self.msg_handler.enable_debug.value = 0
         logger.info("Yen3 - disable debug")
