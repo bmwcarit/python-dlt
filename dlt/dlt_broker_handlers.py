@@ -214,7 +214,8 @@ class DLTMessageHandler(Process):
 
         if message is not None and not (message.apid == "" and message.ctid == ""):
             if self.enable_debug.value > 0:
-                logger.info("Yen3 - handle message: %s, %s", message.storage_timestamp, message)
+                if message.apid == "SGW" and message.ctid == "CTX":
+                    logger.info("Yen3 - handle message: %s, %s", message.storage_timestamp, message)
 
             for filters, queue_ids in self.context_map.items():
                 if filters in ((message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid)):
