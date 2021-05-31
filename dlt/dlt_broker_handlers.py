@@ -217,7 +217,7 @@ class DLTMessageHandler(Process):
                 logger.info("Yen3 - handle message: %s, %s", message.storage_timestamp, message)
 
             for filters, queue_ids in self.context_map.items():
-                if filters in [(message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid)]:
+                if filters in ((message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid)):
                     for queue_id in queue_ids:
                         if self.message_queue.full():
                             logger.error("message_queue is full ! put() on this queue will block")
