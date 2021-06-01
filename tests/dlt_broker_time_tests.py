@@ -2,20 +2,26 @@
 """Test DLTBroker with enabling dlt_time"""
 from contextlib import contextmanager
 import itertools
+from multiprocessing import Queue
 import time
 
 from nose.tools import assert_false, assert_is_none, assert_is_not_none, assert_raises, assert_true, eq_
 from parameterized import parameterized
 import six
 
-from dlt.dlt_broker import DLTBroker
-from dlt.dlt_broker_handlers import DLTMessageHandler
+from dlt.dlt_broker import create_filter_ack_queue, DLTBroker, logger
+from dlt.dlt_broker_handlers import DLTContextHandler, DLTFilterAckMessageHandler, DLTMessageHandler
 from tests.utils import MockDLTMessage
 
 if six.PY2:
-    from mock import patch, MagicMock
+    from mock import ANY, patch, MagicMock
 else:
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import ANY, patch, MagicMock
+
+try:
+    import Queue as tqueue
+except ImportError:
+    import queue as tqueue  # pylint: disable=import-error
 
 
 def fake_py_dlt_client_main_loop(client, callback, *args, **kwargs):
@@ -23,20 +29,51 @@ def fake_py_dlt_client_main_loop(client, callback, *args, **kwargs):
 
 
 @contextmanager
-def dlt_broker(pydlt_main_func=fake_py_dlt_client_main_loop, enable_dlt_time=True):
+def dlt_broker(pydlt_main_func=fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=False):
     """Initialize a fake DLTBroker"""
 
     with patch("dlt.dlt_broker_handlers.DLTMessageHandler._client_connect"), patch(
         "dlt.dlt_broker_handlers.py_dlt_client_main_loop", side_effect=pydlt_main_func
     ):
-        broker = DLTBroker("42.42.42.42", enable_dlt_time=enable_dlt_time)
+        broker = DLTBroker("42.42.42.42", enable_dlt_time=enable_dlt_time, enable_filter_set_ack=enable_filter_set_ack)
         broker.msg_handler._client = MagicMock()
 
-        broker.start()
+        try:
+            broker.start()
 
-        yield broker
+            yield broker
 
-        broker.stop()
+        finally:
+            broker.stop()
+
+
+@contextmanager
+def dlt_filter_ack_msg_handler():
+    queue = Queue()
+
+    handler = DLTFilterAckMessageHandler(queue)
+    try:
+        handler.start()
+        queue.cancel_join_thread()
+
+        yield (handler, queue)
+    finally:
+        handler.stop()
+        queue.close()
+
+
+def fake_dlt_msg_handler(msg, with_filter_ack_queue):
+    """Create a fake DLTMessageHandler"""
+    filter_queue = MagicMock()
+    filter_ack_queue = MagicMock() if with_filter_ack_queue else None
+    client_cfg = {"ip_address": b"127.0.0.1", "filename": b"/dev/null", "verbose": 0, "port": "1234"}
+
+    filter_queue.empty.side_effect = [False, True]
+    filter_queue.get_nowait.return_value = msg
+
+    return DLTMessageHandler(
+        filter_queue, MagicMock(), MagicMock(), client_cfg, dlt_time_value=None, filter_ack_queue=filter_ack_queue
+    )
 
 
 def test_start_stop_dlt_broker():
@@ -88,3 +125,212 @@ def test_dlt_broker_get_latest_dlt_time():
             time.sleep(0.01)
 
     eq_(sorted(time_vals), [0.0, 43.42, 44.42, 45.42])
+
+
+def test_start_stop_dlt_broker_with_dlt_ack_msg_handler():
+    """Test to stop DLTBroker with ack msg handler normally"""
+    with dlt_broker(fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=True) as broker:
+        assert_is_not_none(broker.filter_ack_msg_handler)
+
+
+def test_start_stop_dlt_broker_without_dlt_ack_msg_handler():
+    """Test to stop DLTBroker without ack msg handler normally"""
+    with dlt_broker(fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=False) as broker:
+        assert_is_none(broker.filter_ack_msg_handler)
+
+
+def test_create_filter_ack_queue():
+    """Test to register and unregister an ack queue"""
+    handler_mock = MagicMock()
+
+    with create_filter_ack_queue(handler_mock) as queue:
+        queue.put(True)
+        assert_true(queue.get())
+
+    handler_mock.register.assert_called_with(queue)
+    handler_mock.unregister.assert_called_with(queue)
+
+
+@parameterized([(True, True, True), (False, False, True), (True, False, False), (False, True, False)])
+def test_recv_filter_set_ack(ack, required_ack, return_val):
+    """Test to receive an ack value"""
+    queue = tqueue.Queue()
+
+    queue.put(ack)
+    with dlt_broker(enable_filter_set_ack=True) as broker:
+        eq_(return_val, broker._recv_filter_set_ack(queue, required_ack))
+
+
+def test_recv_filter_set_ack_timeout_ignore():
+    """Test not to receive an ack value"""
+    queue = tqueue.Queue()
+
+    with dlt_broker(enable_filter_set_ack=True) as broker:
+        broker.filter_set_ack_timeout = 0.01
+        broker.ignore_filter_set_ack_timeout = True
+
+        assert_is_none(broker._recv_filter_set_ack(queue, True))
+
+
+def test_recv_filter_set_ack_timeout_exception():
+    """Test not to receive an ack value and with an exception"""
+    queue = tqueue.Queue()
+
+    with dlt_broker(enable_filter_set_ack=True) as broker:
+        broker.filter_set_ack_timeout = 0.01
+        broker.ignore_filter_set_ack_timeout = False
+
+        with assert_raises(tqueue.Empty) as err:
+            broker._recv_filter_set_ack(queue, True)
+
+        eq_(str(err.exception), "")
+
+
+def test_add_context_with_ack():
+    """Test to send a filter-setting message with required ack"""
+    queue = tqueue.Queue()
+
+    with patch("dlt.dlt_broker.DLTBroker._recv_filter_set_ack", return_value=True) as ack_mock:
+        with dlt_broker(enable_filter_set_ack=True) as broker:
+            ori_context_handler = broker.context_handler
+            broker.context_handler = MagicMock()
+            try:
+                broker.add_context(queue, [("APID", "CTID")])
+
+                broker.context_handler.register.assert_called()
+                ack_mock.assert_called()
+            finally:
+                broker.context_handler = ori_context_handler
+
+
+def test_add_context_with_ack_warning():
+    """Test to send a filter-setting message but not received an ack"""
+    queue = tqueue.Queue()
+
+    with patch("dlt.dlt_broker.DLTBroker._recv_filter_set_ack", return_value=False) as ack_mock, patch.object(
+        logger, "warning"
+    ) as logger_mock:
+        with dlt_broker(enable_filter_set_ack=True) as broker:
+            ori_context_handler = broker.context_handler
+            broker.context_handler = MagicMock()
+            try:
+                broker.add_context(queue, [("APID", "CTID")])
+
+                broker.context_handler.register.assert_called()
+                ack_mock.assert_called()
+
+                logger_mock.assert_called_with(ANY, [("APID", "CTID")], id(queue))
+            finally:
+                broker.context_handler = ori_context_handler
+
+
+def test_start_stop_dlt_filter_ack_msg_handler():
+    """Test to start/stop DLTFilterAckMessageHandler normally"""
+
+    with dlt_filter_ack_msg_handler() as (handler, _):
+        pass
+
+    assert_false(handler.is_alive())
+
+
+def test_dlt_filter_ack_msg_handler_register():
+    """Test to register a new ack queue into DLTFilterAckMessageHandler"""
+    queue_ack = tqueue.Queue()
+
+    with dlt_filter_ack_msg_handler() as (handler, queue):
+        handler.register(queue_ack)
+
+        queue.put((id(queue_ack), True))
+        assert_true(queue_ack.get())
+
+
+def test_dlt_filter_ack_msg_handler_unregister():
+    """Test to unregister a new ack queue into DLTFilterAckMessageHandler"""
+    queue_ack = tqueue.Queue()
+
+    with dlt_filter_ack_msg_handler() as (handler, queue):
+        handler.register(queue_ack)
+
+        handler.unregister(queue_ack)
+        with assert_raises(tqueue.Empty):
+            queue.put((id(queue_ack), False))
+            queue_ack.get_nowait()
+
+
+def test_make_send_filter_msg():
+    """Test to generate a filter message"""
+    handler = DLTContextHandler(MagicMock(), MagicMock())
+
+    is_register = True
+    filters = [("APID", "CTID")]
+    queue = MagicMock()
+
+    eq_(
+        handler._make_send_filter_msg(queue, filters, is_register),
+        (id(queue), filters, is_register),
+    )
+
+
+def test_make_send_filter_msg_with_ack_queue():
+    """Test to generate a filter message with ack queue setting"""
+    handler = DLTContextHandler(MagicMock(), MagicMock())
+
+    is_register = True
+    filters = [("APID", "CTID")]
+    queue = MagicMock()
+    queue_ack = MagicMock()
+
+    eq_(
+        handler._make_send_filter_msg(queue, filters, is_register, context_filter_ack_queue=queue_ack),
+        (id(queue), id(queue_ack), filters, is_register),
+    )
+
+
+def test_dlt_message_handler_process_filter_queue_add():
+    """Test to add a filter"""
+    handler = fake_dlt_msg_handler(msg=(42, [("APID", "CTID")], True), with_filter_ack_queue=True)
+    handler._process_filter_queue()
+
+    eq_(handler.context_map[("APID", "CTID")], [42])
+    handler.filter_ack_queue.put.assert_not_called()
+
+
+def test_dlt_message_handler_process_filter_queue_add_ack():
+    """Test to add a filter with ack"""
+    handler = fake_dlt_msg_handler(msg=(42, 43, [("APID", "CTID")], True), with_filter_ack_queue=True)
+    handler._process_filter_queue()
+
+    eq_(handler.context_map[("APID", "CTID")], [42])
+    handler.filter_ack_queue.put.assert_called_with((43, True))
+
+
+def test_dlt_message_handler_process_filter_queue_remove():
+    """Test to remove a filter"""
+    handler = fake_dlt_msg_handler(msg=(42, [("APID", "CTID")], False), with_filter_ack_queue=True)
+    handler.context_map[("APID", "CTID")].append(42)
+
+    handler._process_filter_queue()
+
+    assert_true(("APID", "CTID") not in handler.context_map)
+    handler.filter_ack_queue.put.assert_not_called()
+
+
+def test_dlt_message_handler_process_filter_queue_remove_ack():
+    """Test to remove a filter with ack"""
+    handler = fake_dlt_msg_handler(msg=(42, 43, [("APID", "CTID")], False), with_filter_ack_queue=True)
+    handler.context_map[("APID", "CTID")].append(42)
+
+    handler._process_filter_queue()
+
+    assert_true(("APID", "CTID") not in handler.context_map)
+    handler.filter_ack_queue.put.assert_called_with((43, False))
+
+
+def test_dlt_message_handler_process_filter_queue_remove_exception():
+    """Test to remove a filter when the filter does not exists"""
+    handler = fake_dlt_msg_handler(msg=(42, [("APID", "CTID")], False), with_filter_ack_queue=True)
+
+    handler._process_filter_queue()
+
+    eq_(handler.context_map[("APID", "CTID")], [])
+    handler.filter_ack_queue.put.assert_not_called()
