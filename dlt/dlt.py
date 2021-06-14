@@ -40,7 +40,6 @@ MAX_FILTER_REACHED = 1
 REPEATED_FILTER = 2
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-
 DLT_EMPTY_FILE_ERROR = "DLT TRACE FILE IS EMPTY"
 cDLT_FILE_NOT_OPEN_ERROR = "Could not open DLT Trace file (libdlt)"  # pylint: disable=invalid-name
 
@@ -159,7 +158,6 @@ class Payload(object):
             value = None
             if type_info & DLT_TYPE_INFO_STRG:
                 if (get_scod(type_info) == DLT_SCOD_ASCII) or (get_scod(type_info) == DLT_SCOD_UTF8):
-
                     length = struct.unpack_from("H", self._buf, offset)[0]
                     offset += struct.calcsize("H")
                     value = self._buf[offset:offset + length - 1]  # strip the string terminating char \x00
@@ -344,7 +342,7 @@ class DLTMessage(cDLTMessage, MessageMode):
         ctid = b""
         tmsp_value = 0.0
 
-        bytes_offset = 0    # We know where data will be in the message, but ...
+        bytes_offset = 0  # We know where data will be in the message, but ...
         if not htyp_data & DLT_HTYP_WEID:  # if there is no ECU ID and/or Session ID, then it will be earlier
             bytes_offset -= 4
         if not htyp_data & DLT_HTYP_WSID:
@@ -470,7 +468,7 @@ class DLTMessage(cDLTMessage, MessageMode):
     # convenient access to import DLT message attributes
     # no need to remember in which header are those attrs defined
     @cached_property
-    def ecuid(self):   # pylint: disable=invalid-overridden-method
+    def ecuid(self):  # pylint: disable=invalid-overridden-method
         """Get the ECU ID
 
         :returns: ECU ID
@@ -559,7 +557,7 @@ class DLTMessage(cDLTMessage, MessageMode):
         :returns: storage header timestamp
         :rtype: float
         """
-        return float("{}.{}".format(self.storageheader.seconds, self.storageheader.microseconds))
+        return self.storageheader.seconds + self.storageheader.microseconds * 0.000001
 
 
 class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
@@ -637,7 +635,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         :rtype: int
         """
         with open(self.filename, "rb") as fobj:
-            last_position = self.file_position   # pylint: disable=access-member-before-definition
+            last_position = self.file_position  # pylint: disable=access-member-before-definition
             fobj.seek(last_position)
             buf = fobj.read(1024)
             while buf:
