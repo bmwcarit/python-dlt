@@ -335,4 +335,5 @@ class DLTMessageHandler(Process):
                     self._client.disconnect()
 
         self.message_queue.close()
+        self._client.disconnect()
         logger.info("DLTMessageHandler worker execution complete")
