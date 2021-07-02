@@ -906,11 +906,6 @@ class DLTClient(cDltClient):
         # it ourselves elsewhere
         self.port = kwords.get("port", DLT_DAEMON_TCP_PORT)
 
-    def __del__(self):
-        if dltlib.dlt_client_cleanup(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
-            raise RuntimeError("Could not cleanup DLTClient")
-        self.disconnect()
-
     def connect(self, timeout=None):
         """Connect to the server
 
@@ -964,6 +959,8 @@ class DLTClient(cDltClient):
 
     def disconnect(self):
         """Close all sockets"""
+        if dltlib.dlt_client_cleanup(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
+            raise RuntimeError("Could not cleanup DLTClient")
         if self._connected_socket:
             try:
                 self._connected_socket.shutdown(socket.SHUT_RDWR)
