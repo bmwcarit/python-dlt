@@ -37,10 +37,11 @@ class DLTTimeValue(object):
     variable. The solution based on Value does not have such problem, only
     assigns the value to the shared memory directly.
 
-    khiz678 also did a simple benchamrk for the Value soltuion. It could
-    receive more than 100000 timestamps per seocnd.  It's twice faster than
+    khiz678 also did a simple benchmark for the Value solution. It could
+    receive more than 100000 timestamps per second.  It's twice faster than
     Pipe's implementation.
     """
+
     def __init__(self, default_value=0.0):
         self._timestamp_mem = Value(ctypes.c_double, default_value)
 
@@ -335,4 +336,5 @@ class DLTMessageHandler(Process):
                     self._client.disconnect()
 
         self.message_queue.close()
+        self._client.disconnect()
         logger.info("DLTMessageHandler worker execution complete")

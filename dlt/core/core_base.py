@@ -1,10 +1,25 @@
 # Copyright (C) 2016. BMW Car IT GmbH. All rights reserved.
 """Default implementation of the ctypes bindings for the DLT library"""
 import ctypes
+import logging
+import sys
+import six
 
 # pylint: disable=too-few-public-methods,invalid-name,consider-using-ternary
 
-dltlib = ctypes.cdll.LoadLibrary('libdlt.so.2')
+if sys.platform.startswith("darwin"):
+    dltlib = ctypes.cdll.LoadLibrary("libdlt.dylib")
+elif sys.platform.startswith("linux"):
+    dltlib = ctypes.cdll.LoadLibrary("libdlt.so.2")
+else:
+    raise RuntimeError("Platform %s not supported" % sys.platform)
+
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+# Return value for DLTFilter.add() - exceeded maximum number of filters
+MAX_FILTER_REACHED = 1
+# Return value for DLTFilter.add() - specified filter already exists
+REPEATED_FILTER = 2
 
 DLT_ID_SIZE = 4
 DLT_FILTER_MAX = 30  # Maximum number of filters
@@ -469,9 +484,43 @@ class cDltClient(ctypes.Structure):
         int serial_mode;       /**< serial_mode Serial mode enabled =1, disabled =0 */
     } DltClient;
     """
+
     _fields_ = [("receiver", cDltReceiver),
                 ("sock", ctypes.c_int),
                 ("servIP", ctypes.c_char_p),
                 ("serialDevice", ctypes.c_char_p),
                 ("baudrate", ctypes.c_int),
                 ("serial_mode", ctypes.c_int)]
+
+
+class cDLTFilter(ctypes.Structure):  # pylint: disable=invalid-name
+    """
+    typedef struct
+    {
+        char apid[DLT_FILTER_MAX][DLT_ID_SIZE]; /**< application id */
+        char ctid[DLT_FILTER_MAX][DLT_ID_SIZE]; /**< context id */
+        int  counter;                           /**< number of filters */
+    } DltFilter;
+    """
+
+    _fields_ = [
+        ("apid", (ctypes.c_char * DLT_ID_SIZE) * DLT_FILTER_MAX),
+        ("ctid", (ctypes.c_char * DLT_ID_SIZE) * DLT_FILTER_MAX),
+        ("counter", ctypes.c_int),
+    ]
+
+    # pylint: disable=too-many-arguments
+    def add(self, apid, ctid):
+        """Add new filter pair"""
+        if six.PY3:
+            if isinstance(apid, str):
+                apid = bytes(apid, "ascii")
+            if isinstance(ctid, str):
+                ctid = bytes(ctid, "ascii")
+        if dltlib.dlt_filter_add(ctypes.byref(self), apid or b"", ctid or b"", self.verbose) == DLT_RETURN_ERROR:
+            if self.counter >= DLT_FILTER_MAX:
+                logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)
+                return MAX_FILTER_REACHED
+            logger.debug("Filter ('%s', '%s') already exists", apid, ctid)
+            return REPEATED_FILTER
+        return 0

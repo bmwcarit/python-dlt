@@ -21,8 +21,9 @@ class TestCoreStructures(unittest.TestCase):
                          'cDltStandardHeaderExtra': 12,
                          'cDltExtendedHeader': 10,
                          'cDLTMessage': 120,
-                         'cDltReceiver': 64,
-                         'cDltClient': 128}
+                         'cDltReceiver': 72,
+                         'cDltClient': 144,
+                         'cDLTFilter': 604}
 
     def test_sizeof(self):
         for clsname, expected in self.size_map.items():

@@ -16,8 +16,8 @@ import threading
 import six
 
 from dlt.core import (
-    dltlib, DLT_CLIENT_MODE_UDP_MULTICAST, DLT_ID_SIZE, DLT_HTYP_WEID, DLT_HTYP_WSID, DLT_HTYP_WTMS,
-    DLT_HTYP_UEH, DLT_RETURN_OK, DLT_RETURN_ERROR, DLT_RETURN_TRUE, DLT_FILTER_MAX, DLT_MESSAGE_ERROR_OK,
+    cDLTFilter, dltlib, DLT_CLIENT_MODE_UDP_MULTICAST, DLT_ID_SIZE, DLT_HTYP_WEID, DLT_HTYP_WSID, DLT_HTYP_WTMS,
+    DLT_HTYP_UEH, DLT_RETURN_OK, DLT_RETURN_ERROR, DLT_RETURN_TRUE, DLT_MESSAGE_ERROR_OK,
     cDltExtendedHeader, cDltClient, MessageMode, cDLTMessage, cDltStorageHeader, cDltStandardHeader,
     DLT_TYPE_INFO_UINT, DLT_TYPE_INFO_SINT, DLT_TYPE_INFO_STRG, DLT_TYPE_INFO_SCOD,
     DLT_TYPE_INFO_TYLE, DLT_TYPE_INFO_VARI, DLT_TYPE_INFO_RAWD,
@@ -34,10 +34,6 @@ except Exception:  # pylint: disable=broad-except
     pass
 
 MAX_LOG_IN_ROW = 3
-# Return value for DLTFilter.add() - exceeded maximum number of filters
-MAX_FILTER_REACHED = 1
-# Return value for DLTFilter.add() - specified filter already exists
-REPEATED_FILTER = 2
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 DLT_EMPTY_FILE_ERROR = "DLT TRACE FILE IS EMPTY"
@@ -64,21 +60,10 @@ class cached_property(object):  # pylint: disable=invalid-name
         return value
 
 
-class DLTFilter(ctypes.Structure):
+class DLTFilter(cDLTFilter):
     """Structure to store filter parameters. ID are maximal four characters. Unused values are filled with zeros.
     If every value as filter is valid, the id should be empty by having only zero values.
-
-    typedef struct
-    {
-        char apid[DLT_FILTER_MAX][DLT_ID_SIZE]; /**< application id */
-        char ctid[DLT_FILTER_MAX][DLT_ID_SIZE]; /**< context id */
-        int  counter;                           /**< number of filters */
-    } DltFilter;
     """
-
-    _fields_ = [("apid", (ctypes.c_char * DLT_ID_SIZE) * DLT_FILTER_MAX),
-                ("ctid", (ctypes.c_char * DLT_ID_SIZE) * DLT_FILTER_MAX),
-                ("counter", ctypes.c_int)]
 
     verbose = 0
 
@@ -91,21 +76,6 @@ class DLTFilter(ctypes.Structure):
     def __del__(self):
         if dltlib.dlt_filter_free(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
             raise RuntimeError("Could not cleanup DLTFilter")
-
-    def add(self, apid, ctid):
-        """Add new filter pair"""
-        if six.PY3:
-            if isinstance(apid, str):
-                apid = bytes(apid, "ascii")
-            if isinstance(ctid, str):
-                ctid = bytes(ctid, "ascii")
-        if dltlib.dlt_filter_add(ctypes.byref(self), apid or b"", ctid or b"", self.verbose) == DLT_RETURN_ERROR:
-            if self.counter >= DLT_FILTER_MAX:
-                logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)
-                return MAX_FILTER_REACHED
-            logger.debug("Filter ('%s', '%s') already exists", apid, ctid)
-            return REPEATED_FILTER
-        return 0
 
     def __repr__(self):
         """return the 'official' string representation of an object"""
@@ -421,13 +391,22 @@ class DLTMessage(cDLTMessage, MessageMode):
             return self.apid == other.apid and self.ctid == other.ctid and self.__eq__(other)
 
         # pylint: disable=protected-access
-        if hasattr(other, "_fields_") and [x[0] for x in other._fields_] == ["apid", "ctid", "counter"]:
+        if hasattr(other, "_fields_") and [x[0] for x in other._fields_] == [
+                "apid",
+                "ctid",
+                "log_level",
+                "payload_max",
+                "payload_min",
+                "counter",
+        ]:
             # other id DLTFilter
             return dltlib.dlt_message_filter_check(ctypes.byref(self), ctypes.byref(other), 0)
 
         if not isinstance(other, dict):
-            raise TypeError("other must be instance of mgu_dlt.dlt.DLTMessage, mgu_dlt.dlt.DLTFilter or a dictionary"
-                            " found: {}".format(type(other)))
+            raise TypeError(
+                "other must be instance of dlt.dlt.DLTMessage, dlt.dlt.DLTFilter or a dictionary"
+                " found: {}".format(type(other))
+            )
 
         other = other.copy()
         apid = other.get("apid", None)
@@ -906,11 +885,6 @@ class DLTClient(cDltClient):
         # it ourselves elsewhere
         self.port = kwords.get("port", DLT_DAEMON_TCP_PORT)
 
-    def __del__(self):
-        if dltlib.dlt_client_cleanup(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
-            raise RuntimeError("Could not cleanup DLTClient")
-        self.disconnect()
-
     def connect(self, timeout=None):
         """Connect to the server
 
@@ -964,6 +938,8 @@ class DLTClient(cDltClient):
 
     def disconnect(self):
         """Close all sockets"""
+        if dltlib.dlt_client_cleanup(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
+            raise RuntimeError("Could not cleanup DLTClient")
         if self._connected_socket:
             try:
                 self._connected_socket.shutdown(socket.SHUT_RDWR)
