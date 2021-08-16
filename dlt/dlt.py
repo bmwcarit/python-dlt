@@ -25,6 +25,7 @@ from dlt.core import (
     DLT_TYLE_128BIT, DLT_DAEMON_TCP_PORT, DLT_CLIENT_RCVBUFSIZE, DLT_RECEIVE_BUFSIZE,
     DLT_RECEIVE_SOCKET,
 )
+from dlt.core import API_VER as API_VER_STR
 from dlt.helpers import bytes_to_str
 
 try:
@@ -907,6 +908,7 @@ class DLTClient(cDltClient):
         self.port = kwords.get("port", DLT_DAEMON_TCP_PORT)
 
     def ready_to_read(self):
+        """Check if the socket is ready to read data"""
         if not self.is_udp_multicast:
             try:
                 ready_to_read = self._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
@@ -954,9 +956,8 @@ class DLTClient(cDltClient):
                         self.sock = ctypes.c_int(self._connected_socket.fileno())
                         # - also init the receiver to replicate
                         # dlt_client_connect() behavior
-                        from dlt.core import API_VER as API_VER_STR
-                        API_VER = tuple(int(num) for num in API_VER_STR.split('.'))
-                        if API_VER < (2, 18, 6):
+                        api_ver = tuple(int(num) for num in API_VER_STR.split('.'))
+                        if api_ver < (2, 18, 6):
                             connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
                                                                  self.sock,
                                                                  DLT_CLIENT_RCVBUFSIZE)
@@ -1082,9 +1083,8 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # the status of the callback (in the case of dlt_broker, this is
         # the stop_flag Event), this loop will only proceed after the
         # function has returned or terminate when an exception is raised
-        from dlt.core import API_VER as API_VER_STR
-        API_VER = tuple(int(num) for num in API_VER_STR.split('.'))
-        if API_VER < (2, 18, 6):
+        api_ver = tuple(int(num) for num in API_VER_STR.split('.'))
+        if api_ver < (2, 18, 6):
             recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)
         else:
             recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver))

@@ -3,6 +3,7 @@
 import os
 import unittest
 import ctypes
+from dlt.core import API_VER as API_VER_STR
 
 try:
     from mock import patch, MagicMock
@@ -15,9 +16,8 @@ import dlt
 class TestCoreStructures(unittest.TestCase):
 
     def setUp(self):
-        from dlt.core import API_VER as API_VER_STR
-        API_VER = tuple(int(num) for num in API_VER_STR.split('.'))
-        if API_VER < (2, 18, 6):
+        api_ver = tuple(int(num) for num in API_VER_STR.split('.'))
+        if api_ver < (2, 18, 6):
             self.size_map = {'cDltServiceConnectionInfo': 10,
                              'cDltStorageHeader': 16,
                              'cDltStandardHeader': 4,
