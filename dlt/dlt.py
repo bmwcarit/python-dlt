@@ -906,10 +906,10 @@ class DLTClient(cDltClient):
         # it ourselves elsewhere
         self.port = kwords.get("port", DLT_DAEMON_TCP_PORT)
 
-    def __ready_to_read(self):
-        if not client.is_udp_multicast:
+    def ready_to_read(self):
+        if not self.is_udp_multicast:
             try:
-                ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+                ready_to_read = self._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
             except OSError as os_exc:
                 logger.error("[%s]: DLTLib closed connected socket", os_exc)
                 return DLT_RETURN_ERROR
@@ -959,7 +959,7 @@ class DLTClient(cDltClient):
                                                              receiver_type,
                                                              DLT_CLIENT_RCVBUFSIZE)
                         if connected == DLT_RETURN_OK:
-                            connected = self.__ready_to_read()
+                            connected = self.ready_to_read()
                         break
             else:
                 connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
@@ -1061,7 +1061,7 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # this will raise a socket.timeout exception which the caller is
         # expected to handle (possibly by attempting a reconnect)
         # pylint: disable=protected-access
-        if self.__ready_to_read() != DLT_RETURN_OK:
+        if client.ready_to_read() != DLT_RETURN_OK:
             return False
 
         # - check if stop flag has been set (end of loop)
