@@ -64,6 +64,7 @@ class cached_property(object):  # pylint: disable=invalid-name
         value = obj.__dict__[self.func.__name__] = self.func(obj)
         return value
 
+API_VER_TUPLE = tuple(int(num) for num in API_VER_STR.split('.'))
 
 class DLTFilter(ctypes.Structure):
     """Structure to store filter parameters. ID are maximal four characters. Unused values are filled with zeros.
@@ -956,8 +957,7 @@ class DLTClient(cDltClient):
                         self.sock = ctypes.c_int(self._connected_socket.fileno())
                         # - also init the receiver to replicate
                         # dlt_client_connect() behavior
-                        api_ver = tuple(int(num) for num in API_VER_STR.split('.'))
-                        if api_ver < (2, 18, 6):
+                        if API_VER_TUPLE < (2, 18, 6):
                             connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
                                                                  self.sock,
                                                                  DLT_CLIENT_RCVBUFSIZE)
@@ -1083,8 +1083,7 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # the status of the callback (in the case of dlt_broker, this is
         # the stop_flag Event), this loop will only proceed after the
         # function has returned or terminate when an exception is raised
-        api_ver = tuple(int(num) for num in API_VER_STR.split('.'))
-        if api_ver < (2, 18, 6):
+        if API_VER_TUPLE < (2, 18, 6):
             recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)
         else:
             recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver))
