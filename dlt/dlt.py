@@ -906,7 +906,22 @@ class DLTClient(cDltClient):
         # it ourselves elsewhere
         self.port = kwords.get("port", DLT_DAEMON_TCP_PORT)
 
-    def connect(self, timeout=None):
+    def __ready_to_read(self):
+        if not client.is_udp_multicast:
+            try:
+                ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+            except OSError as os_exc:
+                logger.error("[%s]: DLTLib closed connected socket", os_exc)
+                return DLT_RETURN_ERROR
+
+            if not ready_to_read:
+                # - implies that the other end has called close()/shutdown()
+                # (ie: clean disconnect)
+                logger.debug("connection terminated, returning")
+                return DLT_RETURN_ERROR
+        return DLT_RETURN_OK
+
+    def connect(self, timeout=None, receiver_type=DLT_RECEIVE_SOCKET):
         """Connect to the server
 
         If timeout is provided, block on connect until timeout occurs. If
@@ -941,7 +956,10 @@ class DLTClient(cDltClient):
                         # dlt_client_connect() behavior
                         connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
                                                              self.sock,
+                                                             receiver_type,
                                                              DLT_CLIENT_RCVBUFSIZE)
+                        if connected == DLT_RETURN_OK:
+                            connected = self.__ready_to_read()
                         break
             else:
                 connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
@@ -1043,18 +1061,8 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # this will raise a socket.timeout exception which the caller is
         # expected to handle (possibly by attempting a reconnect)
         # pylint: disable=protected-access
-        if not client.is_udp_multicast:
-            try:
-                ready_to_read = client._connected_socket.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT)
-            except OSError as os_exc:
-                logger.error("[%s]: DLTLib closed connected socket", os_exc)
-                return False
-
-            if not ready_to_read:
-                # - implies that the other end has called close()/shutdown()
-                # (ie: clean disconnect)
-                logger.debug("connection terminated, returning")
-                return False
+        if self.__ready_to_read() != DLT_RETURN_OK:
+            return False
 
         # - check if stop flag has been set (end of loop)
         if callback and not callback(None):
@@ -1067,7 +1075,7 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # the status of the callback (in the case of dlt_broker, this is
         # the stop_flag Event), this loop will only proceed after the
         # function has returned or terminate when an exception is raised
-        recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)
+        recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver))
         if recv_size <= 0:
             logger.error("Error while reading from socket")
             return False
