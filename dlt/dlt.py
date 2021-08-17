@@ -64,7 +64,9 @@ class cached_property(object):  # pylint: disable=invalid-name
         value = obj.__dict__[self.func.__name__] = self.func(obj)
         return value
 
+
 API_VER_TUPLE = tuple(int(num) for num in API_VER_STR.split('.'))
+
 
 class DLTFilter(ctypes.Structure):
     """Structure to store filter parameters. ID are maximal four characters. Unused values are filled with zeros.
