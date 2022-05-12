@@ -552,8 +552,8 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         int32_t counter;       /**< number of messages in DLT file with filter */
         int32_t counter_total; /**< number of messages in DLT file without filter */
         int32_t position;      /**< current index to message parsed in DLT file starting at 0 */
-        long file_length;  /**< length of the file */
-        long file_position; /**< current position in the file */
+        uint64_t file_length;  /**< length of the file */
+        uint64_t file_position; /**< current position in the file */
 
         /* error counters */
         int32_t error_messages; /**< number of incomplete DLT messages found during file parsing */
@@ -573,8 +573,8 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                 ("counter", ctypes.c_int32),
                 ("counter_total", ctypes.c_int32),
                 ("position", ctypes.c_int32),
-                ("file_length", ctypes.c_long),
-                ("file_position", ctypes.c_long),
+                ("file_length", ctypes.c_uint64),
+                ("file_position", ctypes.c_uint64),
                 ("error_messages", ctypes.c_int32),
                 ("filter", ctypes.POINTER(DLTFilter)),
                 ("filter_counter", ctypes.c_int32),
@@ -918,9 +918,15 @@ class DLTClient(cDltClient):
                         self.sock = ctypes.c_int(self._connected_socket.fileno())
                         # - also init the receiver to replicate
                         # dlt_client_connect() behavior
-                        connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
-                                                             self.sock,
-                                                             DLT_CLIENT_RCVBUFSIZE)
+                        if hasattr(self.receiver, "type"):
+                            connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
+                                                                 self.sock,
+                                                                 DLT_RECEIVE_SOCKET,
+                                                                 DLT_CLIENT_RCVBUFSIZE)
+                        else:
+                            connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
+                                                                 self.sock,
+                                                                 DLT_CLIENT_RCVBUFSIZE)
                         break
             else:
                 connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
@@ -1046,7 +1052,10 @@ def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callba
         # the status of the callback (in the case of dlt_broker, this is
         # the stop_flag Event), this loop will only proceed after the
         # function has returned or terminate when an exception is raised
-        recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)
+        if hasattr(client.receiver, "type"):
+            recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver))
+        else:
+            recv_size = dltlib.dlt_receiver_receive(ctypes.byref(client.receiver), DLT_RECEIVE_SOCKET)
         if recv_size <= 0:
             logger.error("Error while reading from socket")
             return False
