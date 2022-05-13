@@ -1,6 +1,6 @@
 FROM debian:buster as builder
 
-ARG LIBDLT_VERSION=v2.18.4
+ARG LIBDLT_VERSION=v2.18.8
 
 RUN set -ex \
     && apt-get update \
