@@ -162,7 +162,7 @@ class DLTContextHandler(Thread):
         if filters:
             with self.lock:
                 try:
-                    del(self.context_map[queue_id])
+                    del self.context_map[queue_id]
                 except KeyError:
                     pass
 
