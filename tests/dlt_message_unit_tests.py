@@ -136,7 +136,7 @@ class TestsDLTMessageUnit(object):
         assert_equal(msg.ecuid, "MGHS")
         assert_equal(msg.tmsp, 3.8533)
         assert_equal(msg.storage_timestamp, 1498470705.539688)
-        assert_equal(msg.payload_decoded, "[connection_info ok] connected \x00\x00\x00\x00")
+        assert_equal(msg.payload_decoded, "[connection_info ok] connected ")
 
     def test_from_bytes_log_multipayload(self):
         msg = DLTMessage.from_bytes(b"DLT\x011\xd9PYfI\x08\x00MGHS=\x00\x000MGHS\x00\x00\x03\x1e\x00\x00\x94\xc8A"
@@ -146,7 +146,7 @@ class TestsDLTMessageUnit(object):
         assert_equal(msg.ctid, "CPUS")
         assert_equal(msg.ecuid, "MGHS")
         assert_equal(msg.tmsp, 3.8088)
-        assert_equal(msg.payload_decoded, "4 online cores ")
+        assert_equal(msg.payload_decoded, "4 online cores")
 
     def test_sort_data_control(self):
         data = (

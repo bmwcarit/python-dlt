@@ -276,7 +276,7 @@ class MessageMode(object):
         if self.is_mode_non_verbose and not self.is_type_control and self.noar == 0:
             buf = ctypes.create_string_buffer('\000' * DLT_DAEMON_TEXTSIZE)
             dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
-            return b"[{}] #{}#".format(self.message_id_string, buf.value[4:])
+            return b"[%s] #%s#" % (self.message_id_string, buf.value[4:].rstrip(b'\000'))
 
         if self.type == DLT_TYPE_CONTROL and self.subtype == DLT_CONTROL_RESPONSE:
             if self.ctrl_service_id == DLT_SERVICE_ID_MARKER:
@@ -286,7 +286,7 @@ class MessageMode(object):
             service_id = self.ctrl_service_id
 
             if self.ctrl_service_id == DLT_SERVICE_ID_GET_SOFTWARE_VERSION:
-                text += ctypes.string_at(self.databuffer, self.datasize)[9:]
+                text += ctypes.string_at(self.databuffer, self.datasize)[9:].rstrip(b'\000')
             elif self.ctrl_service_id == DLT_SERVICE_ID_CONNECTION_INFO:
                 if self.datasize == ctypes.sizeof(cDltServiceConnectionInfo):
                     conn_info = cDltServiceConnectionInfo.from_buffer(bytearray(self.databuffer[:self.datasize]))
@@ -296,25 +296,27 @@ class MessageMode(object):
                         text += b"connected"
                     else:
                         text += b"unknown"
-                    text += b" " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE)
+                    text += b" " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE).rstrip(b'\000')
                 else:
-                    text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5]
+                    text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5].rstrip(b'\000')
             elif service_id == DLT_SERVICE_ID_TIMEZONE:
-                text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5]
+                text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5].rstrip(b'\000')
             else:
                 buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
                 dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII,
                                            self.verbose)
-                text += buf.value
+                text += buf.value.rstrip(b'\000')
             return text
 
         if self.type == DLT_TYPE_CONTROL:
-            return b"[{}] {}".format(self.ctrl_service_id_string,
-                                     ctypes.string_at(self.databuffer, self.datasize)[4:256+4])
+            return b"[%s] %s" % (
+                self.ctrl_service_id_string,
+                ctypes.string_at(self.databuffer, self.datasize)[4:256+4].rstrip(b'\000'),
+            )
 
         buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
         dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
-        return buf.value
+        return buf.value.rstrip(b'\000').strip()
 
 
 class cDltStorageHeader(ctypes.Structure):
