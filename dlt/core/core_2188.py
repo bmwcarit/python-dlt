@@ -2,9 +2,8 @@
 """v2.18.8 specific class definitions"""
 import ctypes
 import logging
-import six
 
-from .core_base import dltlib
+from dlt.core.core_base import dltlib
 
 # DltClientMode from dlt_client.h
 DLT_CLIENT_MODE_UNDEFINED = -1
@@ -59,16 +58,18 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
     } DltReceiver;
     """
 
-    _fields_ = [("lastBytesRcvd", ctypes.c_int32),
-                ("bytesRcvd", ctypes.c_int32),
-                ("totalBytesRcvd", ctypes.c_int32),
-                ("buffer", ctypes.POINTER(ctypes.c_char)),
-                ("buf", ctypes.POINTER(ctypes.c_char)),
-                ("backup_buf", ctypes.POINTER(ctypes.c_char)),
-                ("fd", ctypes.c_int),
-                ("type", ctypes.c_int),
-                ("buffersize", ctypes.c_int32),
-                ("addr", sockaddr_in)]
+    _fields_ = [
+        ("lastBytesRcvd", ctypes.c_int32),
+        ("bytesRcvd", ctypes.c_int32),
+        ("totalBytesRcvd", ctypes.c_int32),
+        ("buffer", ctypes.POINTER(ctypes.c_char)),
+        ("buf", ctypes.POINTER(ctypes.c_char)),
+        ("backup_buf", ctypes.POINTER(ctypes.c_char)),
+        ("fd", ctypes.c_int),
+        ("type", ctypes.c_int),
+        ("buffersize", ctypes.c_int32),
+        ("addr", sockaddr_in),
+    ]
 
 
 class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
@@ -131,16 +132,15 @@ class cDLTFilter(ctypes.Structure):  # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
     def add(self, apid, ctid, log_level=0, payload_min=0, payload_max=ctypes.c_uint32(-1).value // 2):
         """Add new filter pair"""
-        if six.PY3:
-            if isinstance(apid, str):
-                apid = bytes(apid, "ascii")
-            if isinstance(ctid, str):
-                ctid = bytes(ctid, "ascii")
+        if isinstance(apid, str):
+            apid = bytes(apid, "ascii")
+        if isinstance(ctid, str):
+            ctid = bytes(ctid, "ascii")
         if (
-                dltlib.dlt_filter_add(
-                    ctypes.byref(self), apid or b"", ctid or b"", log_level, payload_min, payload_max, self.verbose
-                )
-                == DLT_RETURN_ERROR
+            dltlib.dlt_filter_add(
+                ctypes.byref(self), apid or b"", ctid or b"", log_level, payload_min, payload_max, self.verbose
+            )
+            == DLT_RETURN_ERROR
         ):
             if self.counter >= DLT_FILTER_MAX:
                 logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)

@@ -1,14 +1,9 @@
 # Copyright (C) 2017. BMW Car IT GmbH. All rights reserved.
 """Basic ctypes binding to the DLT library"""
-
-# pylint: disable=invalid-name,wildcard-import
-
 import ctypes
 import os
 
-import six
-
-from dlt.core.core_base import *
+from dlt.core.core_base import *  # noqa: F403
 
 
 API_VER = None
@@ -23,10 +18,7 @@ def get_version(loaded_lib):
         # buf would be something like:
         # DLT Package Version: X.XX.X STABLE, Package Revision: vX.XX.XX build on Jul XX XXXX XX:XX:XX
         # -SYSTEMD -SYSTEMD_WATCHDOG -TEST -SHM
-        if six.PY3:
-            buf_split = buf.value.decode().split()
-        else:
-            buf_split = buf.value.split()
+        buf_split = buf.value.decode().split()
 
         API_VER = buf_split[3]
 
@@ -35,15 +27,15 @@ def get_version(loaded_lib):
 
 def get_api_specific_file(version):
     """Return specific version api filename, if not found fallback to first major version release"""
-    version_tuple = [int(num) for num in version.split('.')]
-    name = 'core_{}.py'.format("".join((str(num) for num in version_tuple)))
+    version_tuple = [int(num) for num in version.split(".")]
+    name = "core_{}.py".format("".join((str(num) for num in version_tuple)))
     if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
         return name
 
     # The minor version does not exist, try to truncate
     if version_tuple[-1] != 0:
         version_tuple = version_tuple[:-1] + [0]
-        name = 'core_{}.py'.format("".join((str(num) for num in version_tuple)))
+        name = "core_{}.py".format("".join((str(num) for num in version_tuple)))
         if not os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
             raise ImportError("No module file: {}".format(name))
 
@@ -55,13 +47,15 @@ def check_libdlt_version(api_ver):
 
     python-dlt now only supports to run libdlt 2.18.5 or above.
     """
-    ver_info = tuple(int(num) for num in api_ver.split('.'))
+    ver_info = tuple(int(num) for num in api_ver.split("."))
     if ver_info < (2, 18, 5):
-        raise ImportError("python-dlt only supports libdlt \
-        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above")
+        raise ImportError(
+            "python-dlt only supports libdlt \
+        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above"
+        )
 
 
-API_VER = get_version(dltlib)
+API_VER = get_version(dltlib)  # noqa: F405
 check_libdlt_version(API_VER)
 
 # Load version specific definitions, if such a file exists, possibly
@@ -79,5 +73,5 @@ check_libdlt_version(API_VER)
 # (as opposed to loading multiple implementations in a specific order)
 # to provide new/overriding implementations.
 api_specific_file = get_api_specific_file(API_VER)
-overrides = __import__('dlt.core.{}'.format(api_specific_file[:-3]), globals(), locals(), ['*'])
+overrides = __import__("dlt.core.{}".format(api_specific_file[:-3]), globals(), locals(), ["*"])
 locals().update(overrides.__dict__)

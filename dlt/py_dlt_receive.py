@@ -1,14 +1,13 @@
 # Copyright (C) 2017. BMW Car IT GmbH. All rights reserved.
 """DLT Receive using py_dlt"""
 
-from __future__ import absolute_import
 import argparse
 import logging
 import time
 
 from dlt.dlt_broker import DLTBroker
 
-logging.basicConfig(format='%(asctime)s %(name)s %(levelname)-8s %(message)s')
+logging.basicConfig(format="%(asctime)s %(name)s %(levelname)-8s %(message)s")
 root_logger = logging.getLogger()  # pylint: disable=invalid-name
 logger = logging.getLogger("py-dlt-receive")  # pylint: disable=invalid-name
 
@@ -32,7 +31,7 @@ def dlt_receive(options):
     try:
         logger.info("Receiving messages...")
         while True:
-            time.sleep(.1)
+            time.sleep(0.1)
     except KeyboardInterrupt:
         logger.info("Interrupted...")
     finally:

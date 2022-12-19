@@ -1,25 +1,14 @@
 # Copyright (C) 2016. BMW Car IT GmbH. All rights reserved.
+from multiprocessing import Queue as mp_queue
+from queue import Empty, Queue
 import time
 import unittest
-try:
-    from Queue import Queue
-except ImportError:
-    from queue import Queue
-
-import six
-
-from multiprocessing.queues import Empty
-if six.PY2:
-    from multiprocessing.queues import Queue as mp_queue
-else:
-    from multiprocessing import Queue as mp_queue
 
 from dlt.dlt_broker_handlers import DLTContextHandler
-from .utils import create_messages, stream_one, stream_multiple
+from tests.utils import create_messages, stream_one, stream_multiple
 
 
 class TestDLTContextHandler(unittest.TestCase):
-
     def setUp(self):
         self.filter_queue = mp_queue()
         self.message_queue = mp_queue()
@@ -96,7 +85,7 @@ class TestDLTContextHandler(unittest.TestCase):
             self.handler.stop()
             self.assertTrue(self.handler.stop_flag.is_set())
             self.assertFalse(self.handler.is_alive())
-        except:
+        except:  # noqa: E722
             self.fail()
 
     def test_run_single_context_queue(self):
@@ -141,7 +130,7 @@ class TestDLTContextHandler(unittest.TestCase):
         # - simulate feeding of messages into the message_queue
         for _ in range(10):
             for message in create_messages(stream_multiple, from_file=True):
-                queue_id = queue_id0 if message.apid == 'DA1' else queue_id1
+                queue_id = queue_id0 if message.apid == "DA1" else queue_id1
                 self.handler.message_queue.put((queue_id, message))
                 # - simulate feeding of all messages for the queue with
                 # no filter.
@@ -157,11 +146,12 @@ class TestDLTContextHandler(unittest.TestCase):
                 all_messages.append(queue2.get(timeout=0.01))
 
             # these queues should not get any messages from other queues
-            self.assertTrue(all(msg.apid == 'DA1' for msg in da1_messages))
-            self.assertTrue(all(msg.apid == 'SYS' for msg in sys_messages))
+            self.assertTrue(all(msg.apid == "DA1" for msg in da1_messages))
+            self.assertTrue(all(msg.apid == "SYS" for msg in sys_messages))
             # this queues should get all messages
-            self.assertFalse(all(msg.apid == 'DA1' for msg in all_messages) or
-                             all(msg.apid == 'SYS' for msg in all_messages))
+            self.assertFalse(
+                all(msg.apid == "DA1" for msg in all_messages) or all(msg.apid == "SYS" for msg in all_messages)
+            )
         except Empty:
             # - we should not get an Empty for at least 10 messages
             self.fail()

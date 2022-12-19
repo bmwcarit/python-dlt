@@ -19,10 +19,13 @@ DLT_RECEIVE_FD = 2
 
 class sockaddr_in(ctypes.Structure):  # pylint: disable=invalid-name
     """Auxiliary definition for cDltReceiver. Defined in netinet/in.h header"""
-    _fields_ = [("sa_family", ctypes.c_ushort),  # sin_family
-                ("sin_port", ctypes.c_ushort),
-                ("sin_addr", ctypes.c_byte * 4),
-                ("__pad", ctypes.c_byte * 8)]    # struct sockaddr_in is 16
+
+    _fields_ = [
+        ("sa_family", ctypes.c_ushort),  # sin_family
+        ("sin_port", ctypes.c_ushort),
+        ("sin_addr", ctypes.c_byte * 4),
+        ("__pad", ctypes.c_byte * 8),
+    ]  # struct sockaddr_in is 16
 
 
 class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
@@ -42,15 +45,18 @@ class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
         struct sockaddr_in addr;  /**< socket address information */
     } DltReceiver;
     """
-    _fields_ = [("lastBytesRcvd", ctypes.c_int32),
-                ("bytesRcvd", ctypes.c_int32),
-                ("totalBytesRcvd", ctypes.c_int32),
-                ("buffer", ctypes.POINTER(ctypes.c_char)),
-                ("buf", ctypes.POINTER(ctypes.c_char)),
-                ("backup_buf", ctypes.POINTER(ctypes.c_char)),
-                ("fd", ctypes.c_int),
-                ("buffersize", ctypes.c_int32),
-                ("addr", sockaddr_in)]
+
+    _fields_ = [
+        ("lastBytesRcvd", ctypes.c_int32),
+        ("bytesRcvd", ctypes.c_int32),
+        ("totalBytesRcvd", ctypes.c_int32),
+        ("buffer", ctypes.POINTER(ctypes.c_char)),
+        ("buf", ctypes.POINTER(ctypes.c_char)),
+        ("backup_buf", ctypes.POINTER(ctypes.c_char)),
+        ("fd", ctypes.c_int),
+        ("buffersize", ctypes.c_int32),
+        ("addr", sockaddr_in),
+    ]
 
 
 class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
@@ -69,13 +75,16 @@ class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
         DltClientMode mode;    /**< mode DltClientMode */
     } DltClient;
     """
-    _fields_ = [("receiver", cDltReceiver),
-                ("sock", ctypes.c_int),
-                ("servIP", ctypes.c_char_p),
-                ("hostip", ctypes.c_char_p),
-                ("port", ctypes.c_int),
-                ("serialDevice", ctypes.c_char_p),
-                ("socketPath", ctypes.c_char_p),
-                ("ecuid", ctypes.c_char * 4),
-                ("baudrate", ctypes.c_uint),
-                ("mode", ctypes.c_int)]
+
+    _fields_ = [
+        ("receiver", cDltReceiver),
+        ("sock", ctypes.c_int),
+        ("servIP", ctypes.c_char_p),
+        ("hostip", ctypes.c_char_p),
+        ("port", ctypes.c_int),
+        ("serialDevice", ctypes.c_char_p),
+        ("socketPath", ctypes.c_char_p),
+        ("ecuid", ctypes.c_char * 4),
+        ("baudrate", ctypes.c_uint),
+        ("mode", ctypes.c_int),
+    ]

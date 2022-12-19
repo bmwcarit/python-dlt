@@ -1,0 +1,20 @@
+[flake8]
+max-line-length = 119
+ignore =
+    # D10*: Missing docstring
+    D10
+    # E203: whitespace before ':'
+    # This error is not PEP8 complaint and should be ignored
+    E203
+    # W503: line break before binary operator
+    # seems to conflict with black code formatting
+    W503
+    # W605: invalid escape sequence '\d'
+    W605
+exclude =
+    .git,
+    .tox,
+    .eggs,
+    __pycache__,
+    build,
+    dist

@@ -4,7 +4,7 @@ LIBDLT_VERSION=v2.18.8
 IMAGE=python-dlt/python-dlt-unittest
 TAG?=latest
 DK_CMD=docker run --rm -v $(shell pwd):/pydlt -w /pydlt
-TEST_ARGS?="-e py3,py27"
+TEST_ARGS?="-e py3,lint"
 
 .PHONY: all
 all:

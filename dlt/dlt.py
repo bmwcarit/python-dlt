@@ -1,8 +1,5 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """Pure Python implementation of DLT library"""
-# pylint: disable=too-many-lines
-from __future__ import absolute_import
-
 import ctypes
 import ipaddress as ip
 import logging
@@ -13,25 +10,44 @@ import struct
 import time
 import threading
 
-import six
-
 from dlt.core import (
-    cDLTFilter, dltlib, DLT_CLIENT_MODE_UDP_MULTICAST, DLT_ID_SIZE, DLT_HTYP_WEID, DLT_HTYP_WSID, DLT_HTYP_WTMS,
-    DLT_HTYP_UEH, DLT_RETURN_OK, DLT_RETURN_ERROR, DLT_RETURN_TRUE, DLT_MESSAGE_ERROR_OK,
-    cDltExtendedHeader, cDltClient, MessageMode, cDLTMessage, cDltStorageHeader, cDltStandardHeader,
-    DLT_TYPE_INFO_UINT, DLT_TYPE_INFO_SINT, DLT_TYPE_INFO_STRG, DLT_TYPE_INFO_SCOD,
-    DLT_TYPE_INFO_TYLE, DLT_TYPE_INFO_VARI, DLT_TYPE_INFO_RAWD,
-    DLT_SCOD_ASCII, DLT_SCOD_UTF8, DLT_TYLE_8BIT, DLT_TYLE_16BIT, DLT_TYLE_32BIT, DLT_TYLE_64BIT,
-    DLT_TYLE_128BIT, DLT_DAEMON_TCP_PORT, DLT_CLIENT_RCVBUFSIZE,
+    cDLTFilter,
+    dltlib,
+    DLT_CLIENT_MODE_UDP_MULTICAST,
+    DLT_ID_SIZE,
+    DLT_HTYP_WEID,
+    DLT_HTYP_WSID,
+    DLT_HTYP_WTMS,
+    DLT_HTYP_UEH,
+    DLT_RETURN_OK,
+    DLT_RETURN_ERROR,
+    DLT_RETURN_TRUE,
+    DLT_MESSAGE_ERROR_OK,
+    cDltExtendedHeader,
+    cDltClient,
+    MessageMode,
+    cDLTMessage,
+    cDltStorageHeader,
+    cDltStandardHeader,
+    DLT_TYPE_INFO_UINT,
+    DLT_TYPE_INFO_SINT,
+    DLT_TYPE_INFO_STRG,
+    DLT_TYPE_INFO_SCOD,
+    DLT_TYPE_INFO_TYLE,
+    DLT_TYPE_INFO_VARI,
+    DLT_TYPE_INFO_RAWD,
+    DLT_SCOD_ASCII,
+    DLT_SCOD_UTF8,
+    DLT_TYLE_8BIT,
+    DLT_TYLE_16BIT,
+    DLT_TYLE_32BIT,
+    DLT_TYLE_64BIT,
+    DLT_TYLE_128BIT,
+    DLT_DAEMON_TCP_PORT,
+    DLT_CLIENT_RCVBUFSIZE,
     DLT_RECEIVE_SOCKET,
 )
 from dlt.helpers import bytes_to_str
-
-try:
-    # Use xrange by default on Python 2
-    range = xrange  # pylint: disable=redefined-builtin,undefined-variable,invalid-name
-except Exception:  # pylint: disable=broad-except
-    pass
 
 MAX_LOG_IN_ROW = 3
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -50,7 +66,7 @@ class cached_property(object):  # pylint: disable=invalid-name
     """  # noqa
 
     def __init__(self, func):
-        self.__doc__ = getattr(func, '__doc__')
+        self.__doc__ = getattr(func, "__doc__")
         self.func = func
 
     def __get__(self, obj, cls):
@@ -82,7 +98,7 @@ class DLTFilter(cDLTFilter):
         apids = [ctypes.string_at(entry[:DLT_ID_SIZE]) for entry in self.apid]
         ctids = [ctypes.string_at(entry[:DLT_ID_SIZE]) for entry in self.ctid]
 
-        return str(list(zip(apids[:self.counter], ctids[:self.counter])))
+        return str(list(zip(apids[: self.counter], ctids[: self.counter])))
 
     def __nonzero__(self):
         """Truth value testing"""
@@ -130,7 +146,7 @@ class Payload(object):
                 if (get_scod(type_info) == DLT_SCOD_ASCII) or (get_scod(type_info) == DLT_SCOD_UTF8):
                     length = struct.unpack_from("H", self._buf, offset)[0]
                     offset += struct.calcsize("H")
-                    value = self._buf[offset:offset + length - 1]  # strip the string terminating char \x00
+                    value = self._buf[offset : offset + length - 1]  # strip the string terminating char \x00
                     offset += length
 
             elif type_info & DLT_TYPE_INFO_UINT:
@@ -183,7 +199,7 @@ class Payload(object):
                 length = struct.unpack_from("H", self._buf, offset)[0]
                 offset += struct.calcsize("H")
 
-                value = self._buf[offset:offset + length]
+                value = self._buf[offset : offset + length]
                 offset += length
 
             else:
@@ -232,13 +248,15 @@ class DLTMessage(cDLTMessage, MessageMode):
         ctypes.memmove(databuffer, self.databuffer, self.datasize)
 
         init_args = (self.found_serialheader, self.resync_offset, self.headersize, self.datasize)
-        state_dict = {'headerbuffer': bytearray(self.headerbuffer),
-                      'databuffer': bytearray(databuffer),
-                      'databuffersize': self.databuffersize,
-                      'storageheader': self.storageheader,
-                      'standardheader': self.standardheader,
-                      'headerextra': self.headerextra,
-                      'extendedheader': self.extendedheader, }
+        state_dict = {
+            "headerbuffer": bytearray(self.headerbuffer),
+            "databuffer": bytearray(databuffer),
+            "databuffersize": self.databuffersize,
+            "storageheader": self.storageheader,
+            "standardheader": self.standardheader,
+            "headerextra": self.headerextra,
+            "extendedheader": self.extendedheader,
+        }
         return (DLTMessage, init_args, state_dict)
 
     # pylint: disable=attribute-defined-outside-init
@@ -248,19 +266,19 @@ class DLTMessage(cDLTMessage, MessageMode):
         This method is called by the pickle module to populate a
         deserialized object's state after it has been created.
         """
-        self.databuffersize = state['databuffersize']
-        self.p_storageheader.contents = state['storageheader']
-        self.p_standardheader.contents = state['standardheader']
-        self.headerextra = state['headerextra']
-        self.p_extendedheader.contents = state['extendedheader']
+        self.databuffersize = state["databuffersize"]
+        self.p_storageheader.contents = state["storageheader"]
+        self.p_standardheader.contents = state["standardheader"]
+        self.headerextra = state["headerextra"]
+        self.p_extendedheader.contents = state["extendedheader"]
         # - populate databuffer
         databuffer = ctypes.ARRAY(ctypes.c_uint8, self.datasize)()
-        for index, byte in enumerate(state['databuffer']):
+        for index, byte in enumerate(state["databuffer"]):
             databuffer[index] = byte
         self.databuffer = databuffer
 
         # - populate headerbuffer
-        for index, byte in enumerate(state['headerbuffer']):
+        for index, byte in enumerate(state["headerbuffer"]):
             self.headerbuffer[index] = byte
 
         # - This is required because we are not calling
@@ -277,11 +295,13 @@ class DLTMessage(cDLTMessage, MessageMode):
 
         buf = ctypes.create_string_buffer(remainder)
 
-        dltlib.dlt_message_read(ctypes.byref(msg),
-                                ctypes.cast(buf, ctypes.POINTER(ctypes.c_uint8)),
-                                ctypes.c_uint(len(remainder)),
-                                0,  # resync
-                                0)  # verbose
+        dltlib.dlt_message_read(
+            ctypes.byref(msg),
+            ctypes.cast(buf, ctypes.POINTER(ctypes.c_uint8)),
+            ctypes.c_uint(len(remainder)),
+            0,  # resync
+            0,
+        )  # verbose
         msg.p_storageheader.contents = storageheader
         msg.initialized_as_object = False
 
@@ -298,14 +318,14 @@ class DLTMessage(cDLTMessage, MessageMode):
     @staticmethod
     def extract_storageheader(data):
         """Split binary message data into storage header and remainder"""
-        header = data[0:ctypes.sizeof(cDltStorageHeader)]
+        header = data[0 : ctypes.sizeof(cDltStorageHeader)]
         # pylint: disable=no-member
-        return (cDltStorageHeader.from_buffer_copy(header), data[ctypes.sizeof(cDltStorageHeader):])
+        return (cDltStorageHeader.from_buffer_copy(header), data[ctypes.sizeof(cDltStorageHeader) :])
 
     @staticmethod
     def extract_sort_data(data):
         """Extract timestamp, message length, apid, ctid from a bytestring in DLT storage format (speed optimized)"""
-        htyp_data = ord(chr(data[16])) if six.PY3 else ord(data[16])
+        htyp_data = ord(chr(data[16]))
         len_data = data[19:17:-1]
         len_value = ctypes.cast(len_data, ctypes.POINTER(ctypes.c_ushort)).contents.value + 16
         apid = b""
@@ -320,13 +340,13 @@ class DLTMessage(cDLTMessage, MessageMode):
 
         if htyp_data & DLT_HTYP_WTMS:
             tmsp_base = 31 + bytes_offset  # Typical timestamp end offset
-            tmsp_data = data[tmsp_base:tmsp_base - 4:-1]
+            tmsp_data = data[tmsp_base : tmsp_base - 4 : -1]
             tmsp_value = ctypes.cast(tmsp_data, ctypes.POINTER(ctypes.c_uint32)).contents.value / 10000.0
 
         if htyp_data & DLT_HTYP_UEH:
             apid_base = 38 + bytes_offset  # Typical APID end offset
-            apid = data[apid_base - 4:apid_base].rstrip(b"\x00")
-            ctid = data[apid_base:apid_base + 4].rstrip(b"\x00")
+            apid = data[apid_base - 4 : apid_base].rstrip(b"\x00")
+            ctid = data[apid_base : apid_base + 4].rstrip(b"\x00")
 
         apid = bytes_to_str(apid)
         ctid = bytes_to_str(ctid)
@@ -361,8 +381,8 @@ class DLTMessage(cDLTMessage, MessageMode):
 
     def __eq__(self, other):
         """Equal test - not comparing storage header (contains timestamps)"""
-        header1 = ctypes.string_at(self.headerbuffer, self.headersize)[ctypes.sizeof(cDltStorageHeader):]
-        header2 = ctypes.string_at(other.headerbuffer, other.headersize)[ctypes.sizeof(cDltStorageHeader):]
+        header1 = ctypes.string_at(self.headerbuffer, self.headersize)[ctypes.sizeof(cDltStorageHeader) :]
+        header2 = ctypes.string_at(other.headerbuffer, other.headersize)[ctypes.sizeof(cDltStorageHeader) :]
 
         data1 = ctypes.string_at(self.databuffer, self.datasize)
         data2 = ctypes.string_at(other.databuffer, other.datasize)
@@ -392,12 +412,12 @@ class DLTMessage(cDLTMessage, MessageMode):
 
         # pylint: disable=protected-access
         if hasattr(other, "_fields_") and [x[0] for x in other._fields_] == [
-                "apid",
-                "ctid",
-                "log_level",
-                "payload_max",
-                "payload_min",
-                "counter",
+            "apid",
+            "ctid",
+            "log_level",
+            "payload_max",
+            "payload_min",
+            "counter",
         ]:
             # other id DLTFilter
             return dltlib.dlt_message_filter_check(ctypes.byref(self), ctypes.byref(other), 0)
@@ -568,22 +588,24 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
     } DltFile;
     """
 
-    _fields_ = [("handle", ctypes.POINTER(ctypes.c_int)),
-                ("index", ctypes.POINTER(ctypes.c_long)),
-                ("counter", ctypes.c_int32),
-                ("counter_total", ctypes.c_int32),
-                ("position", ctypes.c_int32),
-                ("file_length", ctypes.c_uint64),
-                ("file_position", ctypes.c_uint64),
-                ("error_messages", ctypes.c_int32),
-                ("filter", ctypes.POINTER(DLTFilter)),
-                ("filter_counter", ctypes.c_int32),
-                ("msg", DLTMessage)]
+    _fields_ = [
+        ("handle", ctypes.POINTER(ctypes.c_int)),
+        ("index", ctypes.POINTER(ctypes.c_long)),
+        ("counter", ctypes.c_int32),
+        ("counter_total", ctypes.c_int32),
+        ("position", ctypes.c_int32),
+        ("file_length", ctypes.c_uint64),
+        ("file_position", ctypes.c_uint64),
+        ("error_messages", ctypes.c_int32),
+        ("filter", ctypes.POINTER(DLTFilter)),
+        ("filter_counter", ctypes.c_int32),
+        ("msg", DLTMessage),
+    ]
 
     def __init__(self, **kwords):
         self.verbose = kwords.pop("verbose", 0)
         self.filename = kwords.pop("filename", None)
-        if six.PY3 and isinstance(self.filename, str):
+        if isinstance(self.filename, str):
             self.filename = bytes(self.filename, "utf-8")
         super(cDLTFile, self).__init__(**kwords)
         if dltlib.dlt_file_init(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
@@ -598,9 +620,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
 
     def __repr__(self):
         # pylint: disable=bad-continuation
-        return '<DLTFile object {} with {} messages>'.format(
-            "filename={}".format(self.filename) if self.filename else "",
-            self.counter_total)
+        return "<DLTFile object {} with {} messages>".format(
+            "filename={}".format(self.filename) if self.filename else "", self.counter_total
+        )
 
     def __del__(self):
         if dltlib.dlt_file_free(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
@@ -679,7 +701,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         # load the filters
         self.set_filters(filters)
 
-        if six.PY3 and isinstance(filename, str):
+        if isinstance(filename, str):
             filename = bytes(filename, "utf-8")
         # read and index file
         self.filename = filename
@@ -691,11 +713,10 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         if filters is not None:
             dlt_filter = DLTFilter(verbose=self.verbose)
             for apid, ctid in filters:
-                if six.PY3:
-                    if isinstance(apid, str):
-                        apid = bytes(apid, "ascii")
-                    if isinstance(ctid, str):
-                        ctid = bytes(ctid, "ascii")
+                if isinstance(apid, str):
+                    apid = bytes(apid, "ascii")
+                if isinstance(ctid, str):
+                    ctid = bytes(ctid, "ascii")
                 dlt_filter.add(apid, ctid)
             self.filters = dlt_filter
             dltlib.dlt_file_set_filter(ctypes.byref(self), ctypes.byref(dlt_filter), self.verbose)
@@ -746,7 +767,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
     def _open_file(self):
         """Open the configured file for processing"""
         file_opened = False
-        while not self.stop_reading.isSet():
+        while not self.stop_reading.is_set():
             if dltlib.dlt_file_open(ctypes.byref(self), self.filename, self.verbose) >= DLT_RETURN_OK:
                 file_opened = True
                 break
@@ -773,8 +794,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
     def __iter__(self):  # pylint: disable=too-many-branches
         """Iterate over messages in the file"""
         logger.debug("Starting File Read")
-        logger.debug("File Position: %d File Counter: %d File Name: %s",
-                     self.file_position, self.counter, self.filename)
+        logger.debug(
+            "File Position: %d File Counter: %d File Name: %s", self.file_position, self.counter, self.filename
+        )
         cached_mtime = 0
         cached_file_pos = 0
         corruption_check_try = True
@@ -782,7 +804,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self._open_file()
 
         found_data = False
-        while not self.stop_reading.isSet() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
+        while not self.stop_reading.is_set() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
             os_stat = os.stat(self.filename)
             mtime = os_stat.st_mtime
 
@@ -792,8 +814,10 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
 
                 while dltlib.dlt_file_read(ctypes.byref(self), self.verbose) >= DLT_RETURN_OK:
                     found_data = True
-                    if self.filter and dltlib.dlt_message_filter_check(
-                            ctypes.byref(self.msg), self.filter, 0) != DLT_RETURN_TRUE:
+                    if (
+                        self.filter
+                        and dltlib.dlt_message_filter_check(ctypes.byref(self.msg), self.filter, 0) != DLT_RETURN_TRUE
+                    ):
                         continue
 
                     index = self.position
@@ -849,7 +873,7 @@ class DLTClient(cDltClient):
         if "servIP" in kwords:
             serv_ip = kwords.pop("servIP")
             if isinstance(serv_ip, str):
-                serv_ip = serv_ip.encode('utf8')
+                serv_ip = serv_ip.encode("utf8")
             ip_init_state = dltlib.dlt_client_set_server_ip(ctypes.byref(self), ctypes.create_string_buffer(serv_ip))
             if ip_init_state == DLT_RETURN_ERROR:
                 raise RuntimeError("Could not initialize servIP for DLTClient")
@@ -860,16 +884,14 @@ class DLTClient(cDltClient):
                 if "hostIP" in kwords:
                     host_ip = kwords.pop("hostIP")
                     if isinstance(host_ip, str):
-                        host_ip = host_ip.encode('utf8')
+                        host_ip = host_ip.encode("utf8")
                     ip_init_state = dltlib.dlt_client_set_host_if_address(
-                        ctypes.byref(self),
-                        ctypes.create_string_buffer(host_ip)
+                        ctypes.byref(self), ctypes.create_string_buffer(host_ip)
                     )
                     if ip_init_state == DLT_RETURN_ERROR:
                         raise RuntimeError("Could not initialize multicast address for DLTClient")
 
-                set_mode_state = dltlib.dlt_client_set_mode(ctypes.byref(self),
-                                                            DLT_CLIENT_MODE_UDP_MULTICAST)
+                set_mode_state = dltlib.dlt_client_set_mode(ctypes.byref(self), DLT_CLIENT_MODE_UDP_MULTICAST)
                 logger.info("DLTClient using UDP set mode state: %s", set_mode_state)
                 if set_mode_state == DLT_RETURN_ERROR:
                     raise RuntimeError("Could not initialize socket mode for DLTClient")
@@ -906,12 +928,14 @@ class DLTClient(cDltClient):
                 while time.time() < end_time:
                     timeout_remaining = max(end_time - time.time(), 1) if timeout else None
                     try:
-                        self._connected_socket = socket.create_connection((ctypes.string_at(self.servIP), self.port),
-                                                                          timeout=timeout_remaining)
+                        self._connected_socket = socket.create_connection(
+                            (ctypes.string_at(self.servIP), self.port), timeout=timeout_remaining
+                        )
                     except IOError as exc:
                         if error_count < MAX_LOG_IN_ROW:
-                            logger.debug("DLT client connect failed to connect to %s:%s : %s",
-                                         self.servIP, self.port, exc)
+                            logger.debug(
+                                "DLT client connect failed to connect to %s:%s : %s", self.servIP, self.port, exc
+                            )
                         error_count += 1
                         time.sleep(1)
 
@@ -921,14 +945,13 @@ class DLTClient(cDltClient):
                         # - also init the receiver to replicate
                         # dlt_client_connect() behavior
                         if hasattr(self.receiver, "type"):
-                            connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
-                                                                 self.sock,
-                                                                 DLT_RECEIVE_SOCKET,
-                                                                 DLT_CLIENT_RCVBUFSIZE)
+                            connected = dltlib.dlt_receiver_init(
+                                ctypes.byref(self.receiver), self.sock, DLT_RECEIVE_SOCKET, DLT_CLIENT_RCVBUFSIZE
+                            )
                         else:
-                            connected = dltlib.dlt_receiver_init(ctypes.byref(self.receiver),
-                                                                 self.sock,
-                                                                 DLT_CLIENT_RCVBUFSIZE)
+                            connected = dltlib.dlt_receiver_init(
+                                ctypes.byref(self.receiver), self.sock, DLT_CLIENT_RCVBUFSIZE
+                            )
                         break
             else:
                 connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
@@ -972,11 +995,13 @@ class DLTClient(cDltClient):
         :rtype: DLTMessage|None
         """
         msg = DLTMessage(verbose=verbose)
-        res = dltlib.dlt_message_read(ctypes.byref(msg),
-                                      ctypes.cast(self.receiver.buf, ctypes.POINTER(ctypes.c_uint8)),
-                                      ctypes.c_uint(self.receiver.bytesRcvd),  # length
-                                      ctypes.c_int(0),  # resync
-                                      ctypes.c_int(verbose))  # verbose
+        res = dltlib.dlt_message_read(
+            ctypes.byref(msg),
+            ctypes.cast(self.receiver.buf, ctypes.POINTER(ctypes.c_uint8)),
+            ctypes.c_uint(self.receiver.bytesRcvd),  # length
+            ctypes.c_int(0),  # resync
+            ctypes.c_int(verbose),
+        )  # verbose
 
         if res != DLT_MESSAGE_ERROR_OK:
             # - failed to read a complete message, possibly read an incomplete
