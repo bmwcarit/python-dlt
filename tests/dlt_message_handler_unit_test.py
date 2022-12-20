@@ -2,30 +2,23 @@
 import os
 import time
 import unittest
-from multiprocessing.queues import Empty
-from multiprocessing import Event
-
-import six
-
-if six.PY2:
-    from multiprocessing.queues import Queue
-else:
-    from multiprocessing import Queue
+from queue import Empty
+from multiprocessing import Event, Queue
 
 from dlt.dlt_broker_handlers import DLTMessageHandler
-from .utils import create_messages, stream_multiple
+from tests.utils import create_messages, stream_multiple
 
 
 class TestDLTMessageHandler(unittest.TestCase):
-
     def setUp(self):
         self.filter_queue = Queue()
         self.message_queue = Queue()
-        self.client_cfg = {"ip_address": b"127.0.0.1",
-                           "filename": b"/dev/null",
-                           "verbose": 0,
-                           "port": "1234",
-                           }
+        self.client_cfg = {
+            "ip_address": b"127.0.0.1",
+            "filename": b"/dev/null",
+            "verbose": 0,
+            "port": "1234",
+        }
         self.stop_event = Event()
         self.handler = DLTMessageHandler(self.filter_queue, self.message_queue, self.stop_event, self.client_cfg)
 
@@ -119,12 +112,12 @@ class TestDLTMessageHandler(unittest.TestCase):
             messages = [self.message_queue.get(timeout=0.01) for _ in range(60)]
 
             # these queues should not get any messages from other queues
-            self.assertEqual(len([msg for qid, msg in messages if qid == 'queue_id0']), 10)
-            self.assertEqual(len([msg for qid, msg in messages if qid == 'queue_id1']), 10)
-            self.assertEqual(len([msg for qid, msg in messages if qid == 'queue_id2']), 10)
-            self.assertEqual(len([msg for qid, msg in messages if qid == 'queue_id3']), 10)
+            self.assertEqual(len([msg for qid, msg in messages if qid == "queue_id0"]), 10)
+            self.assertEqual(len([msg for qid, msg in messages if qid == "queue_id1"]), 10)
+            self.assertEqual(len([msg for qid, msg in messages if qid == "queue_id2"]), 10)
+            self.assertEqual(len([msg for qid, msg in messages if qid == "queue_id3"]), 10)
             # this queue should get all messages
-            self.assertEqual(len([msg for qid, msg in messages if qid == 'queue_id4']), 20)
+            self.assertEqual(len([msg for qid, msg in messages if qid == "queue_id4"]), 20)
         except Empty:
             # - we should not get an Empty for at least 40 messages
             self.fail()

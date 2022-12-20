@@ -1,17 +1,11 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """DLT Broker is running in a loop in a separate thread until stop_flag is set and adding received messages
 to all registered queues"""
-from __future__ import absolute_import, print_function
-
 from contextlib import contextmanager
 import ipaddress as ip
 import logging
 from multiprocessing import Event, Queue
-
-try:
-    import Queue as tqueue
-except ImportError:
-    import queue as tqueue  # pylint: disable=import-error
+import queue as tqueue
 
 from dlt.dlt_broker_handlers import (
     DLT_DAEMON_TCP_PORT,
@@ -43,10 +37,17 @@ def create_filter_ack_queue(filter_ack_msg_handler):
 class DLTBroker(object):
     """DLT Broker class manages receiving and filtering of DLT Messages"""
 
-    def __init__(self, ip_address, port=DLT_DAEMON_TCP_PORT, use_proxy=False,
-                 enable_dlt_time=False,
-                 enable_filter_set_ack=False, filter_set_ack_timeout=2.0, ignore_filter_set_ack_timeout=False,
-                 **kwargs):
+    def __init__(
+        self,
+        ip_address,
+        port=DLT_DAEMON_TCP_PORT,
+        use_proxy=False,
+        enable_dlt_time=False,
+        enable_filter_set_ack=False,
+        filter_set_ack_timeout=2.0,
+        ignore_filter_set_ack_timeout=False,
+        **kwargs,
+    ):
         """Initialize the DLT Broker
 
         :param str ip_address: IP address of the DLT Daemon. Defaults to TCP connection, unless a multicast address is
@@ -85,7 +86,10 @@ class DLTBroker(object):
         kwargs["port"] = port
         kwargs["timeout"] = kwargs.get("timeout", DLT_CLIENT_TIMEOUT)
         self.msg_handler = DLTMessageHandler(
-            self.filter_queue, self.message_queue, self.mp_stop_flag, kwargs,
+            self.filter_queue,
+            self.message_queue,
+            self.mp_stop_flag,
+            kwargs,
             dlt_time_value=self._dlt_time_value,
             filter_ack_queue=self.filter_ack_queue,
         )
@@ -99,7 +103,12 @@ class DLTBroker(object):
         """DLTBroker main worker method"""
         logger.debug(
             "Starting DLTBroker with parameters: use_proxy=%s, ip_address=%s, port=%s, filename=%s, multicast=%s",
-            False, self._ip_address, self._port, self._filename, ip.ip_address(self._ip_address).is_multicast)
+            False,
+            self._ip_address,
+            self._port,
+            self._filename,
+            ip.ip_address(self._ip_address).is_multicast,
+        )
 
         if self._dlt_time_value:
             logger.debug("Enable dlt time for DLTBroker.")
@@ -127,9 +136,7 @@ class DLTBroker(object):
         except tqueue.Empty as err:
             if self.ignore_filter_set_ack_timeout:
                 logger.info(
-                    "Timeout for getting filter-setting ack: %s, %s",
-                    id(context_filter_ack_queue),
-                    required_response
+                    "Timeout for getting filter-setting ack: %s, %s", id(context_filter_ack_queue), required_response
                 )
                 return None
 
@@ -160,9 +167,14 @@ class DLTBroker(object):
 
                 if not self._recv_filter_set_ack(context_filter_ack_queue, True):
                     logger.warning(
-                        ("Could not receive filter-setting messge ack. It's possible that DLTClient client does "
-                         "not start. If it's a test case. It might be an error. For now, Run it anyway. "
-                         "filters: %s, queue_id: %s"), filters, id(context_queue))
+                        (
+                            "Could not receive filter-setting messge ack. It's possible that DLTClient client does "
+                            "not start. If it's a test case. It might be an error. For now, Run it anyway. "
+                            "filters: %s, queue_id: %s"
+                        ),
+                        filters,
+                        id(context_queue),
+                    )
         else:
             self.context_handler.register(context_queue, filters)
 

@@ -1,0 +1,63 @@
+[project]
+name = "dlt"
+dynamic = ["version"]
+description = "Python implementation for DLT"
+authors = [
+    {name = "BMW CarIT", email="carit.info@bmw.de"},
+]
+readme = "README.md"
+license = {file = "LICENCE.txt"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development",
+    "Topic :: System :: Logging",
+    "Programming Language :: Python :: 3",
+]
+
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=22.10",
+    "flake8>=5",
+    "pytest>=7.2.0",
+    "pytest-cov>=4.0.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/bmwcarit/python-dlt"
+
+[tool.setuptools.packages.find]
+include = ["dlt*"]
+exclude = ["playbook*", "zuul.d*", "extracted_files*", "tests"]
+
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 119
+target_version = ['py37']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+  | _version.py
+)
+'''

@@ -2,17 +2,17 @@
 """Handlers are classes that assist dlt_broker in receiving and
 filtering DLT messages
 """
-from __future__ import absolute_import
 from collections import defaultdict
 import ctypes
 import logging
 from multiprocessing import Lock, Process, Value
-from multiprocessing.queues import Empty
+from queue import Empty
 import socket
 import time
 from threading import Thread, Event
 
 from dlt.dlt import DLTClient, DLT_DAEMON_TCP_PORT, py_dlt_client_main_loop
+
 
 DLT_CLIENT_TIMEOUT = 5
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -62,6 +62,7 @@ class DLTTimeValue(object):
 
 class DLTFilterAckMessageHandler(Thread):
     """Receive filter-set ack message and pass it to the corresponding ack queue"""
+
     def __init__(self, filter_ack_queue):  # (multiprocessing.Queue[Tuple[ContextQueueID, bool]]) -> None
         super(DLTFilterAckMessageHandler, self).__init__()
 
@@ -173,8 +174,7 @@ class DLTContextHandler(Thread):
             )
 
     def run(self):
-        """The thread's main loop
-        """
+        """The thread's main loop"""
         while not self.stop_flag.is_set():
             queue_id, message = None, None
             try:
@@ -207,8 +207,9 @@ class DLTMessageHandler(Process):
     them on the messages queue.
     """
 
-    def __init__(self, filter_queue, message_queue, mp_stop_event, client_cfg,
-                 dlt_time_value=None, filter_ack_queue=None):
+    def __init__(
+        self, filter_queue, message_queue, mp_stop_event, client_cfg, dlt_time_value=None, filter_ack_queue=None
+    ):
         self.filter_queue = filter_queue
         self.filter_ack_queue = filter_ack_queue
         self.message_queue = message_queue
@@ -235,8 +236,12 @@ class DLTMessageHandler(Process):
         :returns: True if connected, False otherwise
         :rtype: bool
         """
-        logger.debug("Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')",
-                     self._ip_address, self._port, self._filename)
+        logger.debug(
+            "Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')",
+            self._ip_address,
+            self._port,
+            self._filename,
+        )
         self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
         connected = self._client.connect(self.timeout)
         if connected:

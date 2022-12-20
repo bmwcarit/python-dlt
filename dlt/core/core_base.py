@@ -3,9 +3,6 @@
 import ctypes
 import logging
 import sys
-import six
-
-# pylint: disable=too-few-public-methods,invalid-name,consider-using-ternary
 
 if sys.platform.startswith("darwin"):
     dltlib = ctypes.cdll.LoadLibrary("libdlt.dylib")
@@ -63,22 +60,22 @@ DLT_CONTROL_RESPONSE = 0x02  # Response to request message
 DLT_CONTROL_TIME = 0x03
 DLT_MSIN_MSTP_SHIFT = 1  # shift right offset to get mstp value
 DLT_MSIN_MTIN_SHIFT = 4  # shift right offset to get mtin value
-DLT_MSIN_MSTP = 0x0e  # message type
-DLT_MSIN_MTIN = 0xf0  # message type info
+DLT_MSIN_MSTP = 0x0E  # message type
+DLT_MSIN_MTIN = 0xF0  # message type info
 DLT_MSIN_VERB = 0x01  # verbose mode
 DLT_MSIN_CONTROL_RESPONSE = (DLT_TYPE_CONTROL << DLT_MSIN_MSTP_SHIFT) | (DLT_CONTROL_RESPONSE << DLT_MSIN_MTIN_SHIFT)
 
 # dlt_protocol.h
 DLT_SERVICE_ID_GET_SOFTWARE_VERSION = 0x13  # Service ID: Get software version
-DLT_SERVICE_ID_UNREGISTER_CONTEXT = 0xf01  # Service ID: Message unregister context
-DLT_SERVICE_ID_CONNECTION_INFO = 0xf02  # Service ID: Message connection info
-DLT_SERVICE_ID_TIMEZONE = 0xf03  # Service ID: Timezone
-DLT_SERVICE_ID_MARKER = 0xf04  # Service ID: Marker
+DLT_SERVICE_ID_UNREGISTER_CONTEXT = 0xF01  # Service ID: Message unregister context
+DLT_SERVICE_ID_CONNECTION_INFO = 0xF02  # Service ID: Message connection info
+DLT_SERVICE_ID_TIMEZONE = 0xF03  # Service ID: Timezone
+DLT_SERVICE_ID_MARKER = 0xF04  # Service ID: Marker
 
 DLT_CONNECTION_STATUS_DISCONNECTED = 0x01  # Client is disconnected
 DLT_CONNECTION_STATUS_CONNECTED = 0x02  # Client is connected
 
-DLT_TYPE_INFO_TYLE = 0x0000000f  # Length of standard data: 1 = 8bit, 2 = 16bit, 3 = 32 bit, 4 = 64 bit, 5 = 128 bit
+DLT_TYPE_INFO_TYLE = 0x0000000F  # Length of standard data: 1 = 8bit, 2 = 16bit, 3 = 32 bit, 4 = 64 bit, 5 = 128 bit
 DLT_TYPE_INFO_BOOL = 0x00000010  # Boolean data
 DLT_TYPE_INFO_SINT = 0x00000020  # Signed integer data
 DLT_TYPE_INFO_UINT = 0x00000040  # Unsigned integer data
@@ -108,25 +105,79 @@ DLT_CLIENT_RCVBUFSIZE = 10024  # Size of client receive buffer from dlt_client_c
 
 # dlt-viever/qdltbase.cpp
 qDltMessageType = [b"log", b"app_trace", b"nw_trace", b"control", b"", b"", b"", b""]
-qDltLogInfo = [b"", b"fatal", b"error", b"warn", b"info", b"debug", b"verbose", b"", b"", b"", b"",
-               b"", b"", b"", b"", b""]
-qDltTraceType = [b"", b"variable", b"func_in", b"func_out", b"state", b"vfb", b"", b"", b"", b"",
-                 b"", b"", b"", b"", b"", b""]
-qDltNwTraceType = [b"", b"ipc", b"can", b"flexray", b"most", b"vfb", b"", b"", b"", b"", b"", b"",
-                   b"", b"", b"", b""]
-qDltControlType = [b"", b"request", b"response", b"time", b"", b"", b"", b"", b"", b"", b"", b"",
-                   b"", b"", b"", b""]
+qDltLogInfo = [
+    b"",
+    b"fatal",
+    b"error",
+    b"warn",
+    b"info",
+    b"debug",
+    b"verbose",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+]
+qDltTraceType = [
+    b"",
+    b"variable",
+    b"func_in",
+    b"func_out",
+    b"state",
+    b"vfb",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+    b"",
+]
+qDltNwTraceType = [b"", b"ipc", b"can", b"flexray", b"most", b"vfb", b"", b"", b"", b"", b"", b"", b"", b"", b"", b""]
+qDltControlType = [b"", b"request", b"response", b"time", b"", b"", b"", b"", b"", b"", b"", b"", b"", b"", b"", b""]
 cqDltMode = [b"non-verbose", b"verbose"]
 qDltEndianness = [b"little-endian", b"big-endian"]
-cqDltTypeInfo = [b"String", b"Bool", b"SignedInteger", b"UnsignedInteger", b"Float", b"RawData", b"TraceInfo",
-                 b"Utf8String"]
-qDltCtrlServiceId = [b"", b"set_log_level", b"set_trace_status", b"get_log_info", b"get_default_log_level",
-                     b"store_config",
-                     b"reset_to_factory_default", b"set_com_interface_status", b"set_com_interface_max_bandwidth",
-                     b"set_verbose_mode", b"set_message_filtering", b"set_timing_packets", b"get_local_time",
-                     b"use_ecu_id", b"use_session_id", b"use_timestamp", b"use_extended_header",
-                     b"set_default_log_level",
-                     b"set_default_trace_status", b"get_software_version", b"message_buffer_overflow"]
+cqDltTypeInfo = [
+    b"String",
+    b"Bool",
+    b"SignedInteger",
+    b"UnsignedInteger",
+    b"Float",
+    b"RawData",
+    b"TraceInfo",
+    b"Utf8String",
+]
+qDltCtrlServiceId = [
+    b"",
+    b"set_log_level",
+    b"set_trace_status",
+    b"get_log_info",
+    b"get_default_log_level",
+    b"store_config",
+    b"reset_to_factory_default",
+    b"set_com_interface_status",
+    b"set_com_interface_max_bandwidth",
+    b"set_verbose_mode",
+    b"set_message_filtering",
+    b"set_timing_packets",
+    b"get_local_time",
+    b"use_ecu_id",
+    b"use_session_id",
+    b"use_timestamp",
+    b"use_extended_header",
+    b"set_default_log_level",
+    b"set_default_trace_status",
+    b"get_software_version",
+    b"message_buffer_overflow",
+]
 qDltCtrlReturnType = [b"ok", b"not_supported", b"error", b"3", b"4", b"5", b"6", b"7", b"no_matching_context_id"]
 
 
@@ -140,15 +191,19 @@ class cDltServiceConnectionInfo(ctypes.Structure):
         char comid[DLT_ID_SIZE];        /**< communication interface */
     } PACKED DltServiceConnectionInfo;
     """
-    _fields_ = [("service_id", ctypes.c_uint32),
-                ("status", ctypes.c_uint8),
-                ("state", ctypes.c_uint8),
-                ("comid", DLT_ID_SIZE * ctypes.c_byte)]
+
+    _fields_ = [
+        ("service_id", ctypes.c_uint32),
+        ("status", ctypes.c_uint8),
+        ("state", ctypes.c_uint8),
+        ("comid", DLT_ID_SIZE * ctypes.c_byte),
+    ]
     _pack_ = 1
 
 
 class MessageMode(object):
     """Default properties for the DLTMessage"""
+
     # pylint: disable=no-member
 
     @property
@@ -164,7 +219,7 @@ class MessageMode(object):
     @property
     def mode_string(self):
         """Returns 'verbose' if DLTMessage is set to verbose mode. Otherwise 'non-verbose'"""
-        return b'verbose' if self.is_mode_verbose else b'non-verbose'
+        return b"verbose" if self.is_mode_verbose else b"non-verbose"
 
     @property
     def is_mode_non_verbose(self):
@@ -274,9 +329,9 @@ class MessageMode(object):
         """
         text = b""
         if self.is_mode_non_verbose and not self.is_type_control and self.noar == 0:
-            buf = ctypes.create_string_buffer('\000' * DLT_DAEMON_TEXTSIZE)
+            buf = ctypes.create_string_buffer("\000" * DLT_DAEMON_TEXTSIZE)
             dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
-            return b"[%s] #%s#" % (self.message_id_string, buf.value[4:].rstrip(b'\000'))
+            return b"[%s] #%s#" % (self.message_id_string, buf.value[4:].rstrip(b"\000"))
 
         if self.type == DLT_TYPE_CONTROL and self.subtype == DLT_CONTROL_RESPONSE:
             if self.ctrl_service_id == DLT_SERVICE_ID_MARKER:
@@ -286,37 +341,38 @@ class MessageMode(object):
             service_id = self.ctrl_service_id
 
             if self.ctrl_service_id == DLT_SERVICE_ID_GET_SOFTWARE_VERSION:
-                text += ctypes.string_at(self.databuffer, self.datasize)[9:].rstrip(b'\000')
+                text += ctypes.string_at(self.databuffer, self.datasize)[9:].rstrip(b"\000")
             elif self.ctrl_service_id == DLT_SERVICE_ID_CONNECTION_INFO:
                 if self.datasize == ctypes.sizeof(cDltServiceConnectionInfo):
-                    conn_info = cDltServiceConnectionInfo.from_buffer(bytearray(self.databuffer[:self.datasize]))
+                    conn_info = cDltServiceConnectionInfo.from_buffer(bytearray(self.databuffer[: self.datasize]))
                     if conn_info.state == DLT_CONNECTION_STATUS_DISCONNECTED:
                         text += b"disconnected"
                     elif conn_info.state == DLT_CONNECTION_STATUS_CONNECTED:
                         text += b"connected"
                     else:
                         text += b"unknown"
-                    text += b" " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE).rstrip(b'\000')
+                    text += b" " + ctypes.string_at(conn_info.comid, DLT_ID_SIZE).rstrip(b"\000")
                 else:
-                    text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5].rstrip(b'\000')
+                    text += ctypes.string_at(self.databuffer, self.datasize)[5 : 256 + 5].rstrip(b"\000")
             elif service_id == DLT_SERVICE_ID_TIMEZONE:
-                text += ctypes.string_at(self.databuffer, self.datasize)[5:256+5].rstrip(b'\000')
+                text += ctypes.string_at(self.databuffer, self.datasize)[5 : 256 + 5].rstrip(b"\000")
             else:
-                buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
-                dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII,
-                                           self.verbose)
-                text += buf.value.rstrip(b'\000')
+                buf = ctypes.create_string_buffer(b"\000" * DLT_DAEMON_TEXTSIZE)
+                dltlib.dlt_message_payload(
+                    ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose
+                )
+                text += buf.value.rstrip(b"\000")
             return text
 
         if self.type == DLT_TYPE_CONTROL:
             return b"[%s] %s" % (
                 self.ctrl_service_id_string,
-                ctypes.string_at(self.databuffer, self.datasize)[4:256+4].rstrip(b'\000'),
+                ctypes.string_at(self.databuffer, self.datasize)[4 : 256 + 4].rstrip(b"\000"),
             )
 
-        buf = ctypes.create_string_buffer(b'\000' * DLT_DAEMON_TEXTSIZE)
+        buf = ctypes.create_string_buffer(b"\000" * DLT_DAEMON_TEXTSIZE)
         dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
-        return buf.value.rstrip(b'\000').strip()
+        return buf.value.rstrip(b"\000").strip()
 
 
 class cDltStorageHeader(ctypes.Structure):
@@ -332,10 +388,13 @@ class cDltStorageHeader(ctypes.Structure):
         char ecu[DLT_ID_SIZE];            /**< The ECU id is added, if it is not already in the DLT message itself */
     } PACKED DltStorageHeader;
     """
-    _fields_ = [("pattern", ctypes.c_char * DLT_ID_SIZE),
-                ("seconds", ctypes.c_uint32),
-                ("microseconds", ctypes.c_int32),
-                ("ecu", ctypes.c_char * DLT_ID_SIZE)]
+
+    _fields_ = [
+        ("pattern", ctypes.c_char * DLT_ID_SIZE),
+        ("seconds", ctypes.c_uint32),
+        ("microseconds", ctypes.c_int32),
+        ("ecu", ctypes.c_char * DLT_ID_SIZE),
+    ]
     _pack_ = 1
 
     def __reduce__(self):
@@ -352,9 +411,8 @@ class cDltStandardHeader(ctypes.BigEndianStructure):
         uint16_t len;           /**< Length of the complete message, without storage header */
     } PACKED DltStandardHeader;
     """
-    _fields_ = [("htyp", ctypes.c_uint8),
-                ("mcnt", ctypes.c_uint8),
-                ("len", ctypes.c_ushort)]
+
+    _fields_ = [("htyp", ctypes.c_uint8), ("mcnt", ctypes.c_uint8), ("len", ctypes.c_ushort)]
     _pack_ = 1
 
     def __reduce__(self):
@@ -371,9 +429,8 @@ class cDltStandardHeaderExtra(ctypes.Structure):
         uint32_t tmsp;     /**< Timestamp since system start in 0.1 milliseconds */
     } PACKED DltStandardHeaderExtra;
     """
-    _fields_ = [("ecu", ctypes.c_char * DLT_ID_SIZE),
-                ("seid", ctypes.c_uint32),
-                ("tmsp", ctypes.c_uint32)]
+
+    _fields_ = [("ecu", ctypes.c_char * DLT_ID_SIZE), ("seid", ctypes.c_uint32), ("tmsp", ctypes.c_uint32)]
     _pack_ = 1
 
     def __reduce__(self):
@@ -391,10 +448,13 @@ class cDltExtendedHeader(ctypes.Structure):
         char ctid[DLT_ID_SIZE];          /**< context id */
     } PACKED DltExtendedHeader;
     """
-    _fields_ = [("msin", ctypes.c_uint8),
-                ("noar", ctypes.c_uint8),
-                ("apid", ctypes.c_char * DLT_ID_SIZE),
-                ("ctid", ctypes.c_char * DLT_ID_SIZE)]
+
+    _fields_ = [
+        ("msin", ctypes.c_uint8),
+        ("noar", ctypes.c_uint8),
+        ("apid", ctypes.c_char * DLT_ID_SIZE),
+        ("ctid", ctypes.c_char * DLT_ID_SIZE),
+    ]
     _pack_ = 1
 
     def __reduce__(self):
@@ -431,23 +491,28 @@ class cDLTMessage(ctypes.Structure):
     } DltMessage;
     """
 
-    _fields_ = [("found_serialheader", ctypes.c_int8),
-                ("resync_offset", ctypes.c_int32),
-
-                ("headersize", ctypes.c_int32),
-                ("datasize", ctypes.c_int32),
-
-                ("headerbuffer", ctypes.c_uint8 * (ctypes.sizeof(cDltStorageHeader) +
-                                                   ctypes.sizeof(cDltStandardHeader) +
-                                                   ctypes.sizeof(cDltStandardHeaderExtra) +
-                                                   ctypes.sizeof(cDltExtendedHeader))),
-                ("databuffer", ctypes.POINTER(ctypes.c_uint8)),
-                ("databuffersize", ctypes.c_uint32),
-
-                ("p_storageheader", ctypes.POINTER(cDltStorageHeader)),
-                ("p_standardheader", ctypes.POINTER(cDltStandardHeader)),
-                ("headerextra", cDltStandardHeaderExtra),
-                ("p_extendedheader", ctypes.POINTER(cDltExtendedHeader))]
+    _fields_ = [
+        ("found_serialheader", ctypes.c_int8),
+        ("resync_offset", ctypes.c_int32),
+        ("headersize", ctypes.c_int32),
+        ("datasize", ctypes.c_int32),
+        (
+            "headerbuffer",
+            ctypes.c_uint8
+            * (
+                ctypes.sizeof(cDltStorageHeader)
+                + ctypes.sizeof(cDltStandardHeader)
+                + ctypes.sizeof(cDltStandardHeaderExtra)
+                + ctypes.sizeof(cDltExtendedHeader)
+            ),
+        ),
+        ("databuffer", ctypes.POINTER(ctypes.c_uint8)),
+        ("databuffersize", ctypes.c_uint32),
+        ("p_storageheader", ctypes.POINTER(cDltStorageHeader)),
+        ("p_standardheader", ctypes.POINTER(cDltStandardHeader)),
+        ("headerextra", cDltStandardHeaderExtra),
+        ("p_extendedheader", ctypes.POINTER(cDltExtendedHeader)),
+    ]
 
 
 class cDltReceiver(ctypes.Structure):
@@ -465,13 +530,16 @@ class cDltReceiver(ctypes.Structure):
         int32_t buffersize;       /**< size of receiver buffer */
     } DltReceiver;
     """
-    _fields_ = [("lastBytesRcvd", ctypes.c_int32),
-                ("bytesRcvd", ctypes.c_int32),
-                ("totalBytesRcvd", ctypes.c_int32),
-                ("buffer", ctypes.POINTER(ctypes.c_char)),
-                ("buf", ctypes.POINTER(ctypes.c_char)),
-                ("fd", ctypes.c_int),
-                ("buffersize", ctypes.c_int32)]
+
+    _fields_ = [
+        ("lastBytesRcvd", ctypes.c_int32),
+        ("bytesRcvd", ctypes.c_int32),
+        ("totalBytesRcvd", ctypes.c_int32),
+        ("buffer", ctypes.POINTER(ctypes.c_char)),
+        ("buf", ctypes.POINTER(ctypes.c_char)),
+        ("fd", ctypes.c_int),
+        ("buffersize", ctypes.c_int32),
+    ]
 
 
 class cDltClient(ctypes.Structure):
@@ -487,12 +555,14 @@ class cDltClient(ctypes.Structure):
     } DltClient;
     """
 
-    _fields_ = [("receiver", cDltReceiver),
-                ("sock", ctypes.c_int),
-                ("servIP", ctypes.c_char_p),
-                ("serialDevice", ctypes.c_char_p),
-                ("baudrate", ctypes.c_int),
-                ("serial_mode", ctypes.c_int)]
+    _fields_ = [
+        ("receiver", cDltReceiver),
+        ("sock", ctypes.c_int),
+        ("servIP", ctypes.c_char_p),
+        ("serialDevice", ctypes.c_char_p),
+        ("baudrate", ctypes.c_int),
+        ("serial_mode", ctypes.c_int),
+    ]
 
 
 class cDLTFilter(ctypes.Structure):  # pylint: disable=invalid-name
@@ -514,11 +584,10 @@ class cDLTFilter(ctypes.Structure):  # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
     def add(self, apid, ctid):
         """Add new filter pair"""
-        if six.PY3:
-            if isinstance(apid, str):
-                apid = bytes(apid, "ascii")
-            if isinstance(ctid, str):
-                ctid = bytes(ctid, "ascii")
+        if isinstance(apid, str):
+            apid = bytes(apid, "ascii")
+        if isinstance(ctid, str):
+            ctid = bytes(ctid, "ascii")
         if dltlib.dlt_filter_add(ctypes.byref(self), apid or b"", ctid or b"", self.verbose) == DLT_RETURN_ERROR:
             if self.counter >= DLT_FILTER_MAX:
                 logger.error("Maximum number (%d) of allowed filters reached, ignoring filter!\n", DLT_FILTER_MAX)

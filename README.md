@@ -1,5 +1,4 @@
-python-dlt
-==========
+# python-dlt
 
 python-dlt is a thin Python ctypes wrapper around libdlt functions. It was
 primarily created for use with BMW's test execution framework. However,
@@ -11,16 +10,14 @@ later versions might require adaptations. The package will not support previous 
 versions from python-dlt v2.0. Also only GENIVI DLT daemon produced traces
 have been tested.
 
-
-Design
-------
+## Design
 
 The code is split up into 3 primary components:
 
 * The `core`: This subpackage provides the major chunk of ctypes wrappers for
   the structures defined in libdlt. It abstracts out the libdlt structures for use
-  by the rest of mgu_dlt. Classes defined here ideally should *not* be used
-  outside of mgu_dlt. The module `core_base.py` provides the default
+  by the rest of python-dlt. Classes defined here ideally should *not* be used
+  outside of python-dlt. The module `core_base.py` provides the default
   implementation of the classes and the other `core_*.py` modules provide the
   overrides for the version specific implementations of libdlt. The correct version
   specific implementation will be loaded automatically at runtime. (the logic for
@@ -29,11 +26,11 @@ The code is split up into 3 primary components:
 * The python interface classes: These are defined in `dlt.py`. Most of the
   classes here derive from their corresponding ctypes class definitions from
   `core` and provide a more python friendly api/access to the underlying C/ctypes
-  implementations. Ideally, python code using `mgu_dlt` would use these classes
+  implementations. Ideally, python code using `python-dlt` would use these classes
   rather than the base classes in `core`.
 
 * API for tools: This is the component that provides common interfaces required
-  by the tools that use `mgu_dlt`, like the `DLTBroker`, 'DLTLifecycle' etc. These
+  by the tools that use `python-dlt`, like the `DLTBroker`, 'DLTLifecycle' etc. These
   classes do not have equivalents in libdlt and were created based on usage
   requirements (and as such make assumptions about the manner in which they would
   be used).
@@ -46,7 +43,7 @@ in C and is a pretty well laid out, straight forward (ie: not many layers of
 abstractions), small code base. Makes for good bedtime reading.
 
 The rest of this document will describe and demonstrate some of the design of
-the external API of mgu_dlt.
+the external API of python-dlt.
 
 The classes most relevant for users of python-dlt possibly are `DLTClient`,
 `DLTFile`, `DLTMessage`, `DLTBroker`. The names hopefully make their purpose
@@ -56,6 +53,7 @@ Here are examples of some interesting ways to use these classes:
 
 * DLTFile and DLTMessage::
 
+```python
     >>> from dlt import dlt
     >>> # DLTFile object can be obtained by lading a trace file
     >>> d = dlt.load("high_full_trace.dlt")
@@ -76,10 +74,12 @@ Here are examples of some interesting ways to use these classes:
     ...                         # the pickle protocol (this is to enable sharing
     ...                         # of the DLTMessage in a multiprocessing
     ...                         # environment)
+```
 
 
 * DLTClient and DLTBroker::
 
+```python
     >>> from dlt import dlt
     >>> c = dlt.DLTClient(servIP="127.0.0.1")   # Only initializes the client
     >>> c.connect()                      # ...this connects
@@ -102,10 +102,9 @@ Here are examples of some interesting ways to use these classes:
     >>> broker.start()
     >>> print(ctx.wait_for(count=10))
     >>>
+```
 
-
-Design of DLTBroker
-~~~~~~~~~~~~~~~~~~~
+## Design of DLTBroker
 
 The DLTBroker abstracts out the management of 2 (multiprocessing) queues:
 

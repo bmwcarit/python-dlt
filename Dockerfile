@@ -1,42 +1,23 @@
-FROM debian:buster as builder
+ARG BASE_IMAGE=alpine:3.17
+FROM ${BASE_IMAGE}
 
 ARG LIBDLT_VERSION=v2.18.8
 
 RUN set -ex \
-    && apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y build-essential git cmake libdbus-1-dev cmake-data \
-            libdbus-1-dev systemd libsystemd-dev wget curl zlib1g-dev
-
-# Install libdlt
-RUN set -ex \
+    && apk add --no-cache build-base musl-dev linux-headers git cmake ninja \
+      wget curl dbus zlib \
+      python3 python3-dev py3-pip py3-tox \
     && git clone https://github.com/GENIVI/dlt-daemon \
     && cd /dlt-daemon \
     && git checkout ${LIBDLT_VERSION} \
     && cd /dlt-daemon \
     && cmake CMakeLists.txt \
-    && make \
-    && make install
+    && make -j \
+    && make install \
+    && ldconfig /usr/local/lib
 
-FROM debian:buster
+RUN mkdir -p /workspace
 
-# Install libdlt.so
-COPY --from=builder /usr/local/lib /usr/local/lib
-
-RUN set -ex \
-    && ldconfig
-
-RUN set -ex \
-    && apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y python3 python3-pip python2 python2-dev git \
-    && pip3 install --no-cache-dir setuptools tox \
-    && apt-get clean all \
-    && rm -rf \
-           /var/cache/debconf/* \
-           /var/lib/apt/lists/* \
-           /var/log/* \
-           /tmp/* \
-           /var/tmp/*
+WORKDIR /workspace
 
 # vim: set ft=dockerfile :
