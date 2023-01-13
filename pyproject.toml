@@ -30,6 +30,9 @@ dev = [
 [project.urls]
 "Homepage" = "https://github.com/bmwcarit/python-dlt"
 
+[project.scripts]
+py_dlt_receive = "dlt.py_dlt_receive:main"
+
 [tool.setuptools.packages.find]
 include = ["dlt*"]
 exclude = ["playbook*", "zuul.d*", "extracted_files*", "tests"]
