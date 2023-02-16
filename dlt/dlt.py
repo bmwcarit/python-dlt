@@ -150,7 +150,6 @@ class Payload(object):
                     offset += length
 
             elif type_info & DLT_TYPE_INFO_UINT:
-
                 if type_info & DLT_TYPE_INFO_VARI:
                     pass
 
@@ -171,7 +170,6 @@ class Payload(object):
                     raise TypeError("reading 128BIT values not supported")
 
             elif type_info & DLT_TYPE_INFO_SINT:
-
                 if type_info & DLT_TYPE_INFO_VARI:
                     pass
 
@@ -192,7 +190,6 @@ class Payload(object):
                     raise TypeError("reading 128BIT values not supported")
 
             elif type_info & DLT_TYPE_INFO_RAWD:
-
                 if type_info & DLT_TYPE_INFO_VARI:
                     pass
 

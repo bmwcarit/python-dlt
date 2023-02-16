@@ -4,7 +4,6 @@ from dlt.helpers import LimitCondition
 
 
 class TestsLimitCondition(object):
-
     __test__ = True
 
     def test_none(self):
