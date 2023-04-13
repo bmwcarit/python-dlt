@@ -212,8 +212,14 @@ class MessageMode(object):
         return self.standardheader.htyp & DLT_HTYP_UEH
 
     @property
+    def _is_extended_header_exists(self):
+        return self.extendedheader and self.extendedheader.msin
+
+    @property
     def is_mode_verbose(self):
         """Returns True if the DLTMessage is set to verbose mode"""
+        if not self._is_extended_header_exists:
+            return self.verbose
         return self.extendedheader.msin & DLT_MSIN_VERB
 
     @property
@@ -290,6 +296,8 @@ class MessageMode(object):
     @property
     def type(self):
         """Returns message type of the DLTMessage"""
+        if not self._is_extended_header_exists:
+            return DLT_TYPE_LOG
         return (self.extendedheader.msin & DLT_MSIN_MSTP) >> DLT_MSIN_MSTP_SHIFT
 
     @property
@@ -301,6 +309,8 @@ class MessageMode(object):
     @property
     def subtype(self):
         """Returns message subtype of the DLTMessage"""
+        if not self._is_extended_header_exists:
+            return DLT_TYPE_LOG
         return (self.extendedheader.msin & DLT_MSIN_MTIN) >> DLT_MSIN_MTIN_SHIFT
 
     @property
@@ -329,7 +339,7 @@ class MessageMode(object):
         """
         text = b""
         if self.is_mode_non_verbose and not self.is_type_control and self.noar == 0:
-            buf = ctypes.create_string_buffer("\000" * DLT_DAEMON_TEXTSIZE)
+            buf = ctypes.create_string_buffer(b"\000" * DLT_DAEMON_TEXTSIZE)
             dltlib.dlt_message_payload(ctypes.byref(self), buf, DLT_DAEMON_TEXTSIZE, DLT_OUTPUT_ASCII, self.verbose)
             return b"[%s] #%s#" % (self.message_id_string, buf.value[4:].rstrip(b"\000"))
 

@@ -8,10 +8,25 @@ from unittest.mock import patch, PropertyMock
 import pytest
 
 from dlt.dlt import DLTMessage
-from tests.utils import create_messages, stream_one, stream_with_params, stream_multiple, msg_benoit, control_one
+from tests.utils import (
+    create_messages,
+    stream_one,
+    stream_with_params,
+    stream_multiple,
+    stream_multiple_with_malformed_message_at_begining,
+    msg_benoit,
+    control_one,
+)
 
 
 class TestsDLTMessageUnit(object):
+    def test_malformed_message(self):
+        msgs = create_messages(stream_multiple_with_malformed_message_at_begining, from_file=True)
+
+        assert msgs[0].message_id == 1279675715
+        assert len(msgs) == 3
+        assert not msgs[0].extendedheader
+
     def test_compare_default_attrs(self):
         attrs = {"extendedheader.apid": "DA1", "extendedheader.ctid": "DC1"}
         msg = create_messages(stream_one)
