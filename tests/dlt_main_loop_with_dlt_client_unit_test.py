@@ -25,7 +25,7 @@ def mock_dlt_receiver_receive_socket(client_receiver, partial=False, Fail=False)
     return len(buf)
 
 
-class TestMainLoop(unittest.TestCase):
+class TestMainLoopWithDltClient(unittest.TestCase):
     def setUp(self):
         self.client = DLTClient()
         self.client._connected_socket = Mock()

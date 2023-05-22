@@ -217,7 +217,7 @@ def test_add_context_with_ack_warning():
                 broker.context_handler.register.assert_called()
                 ack_mock.assert_called()
 
-                logger_mock.assert_called_with(ANY, [("APID", "CTID")], id(queue))
+                logger_mock.assert_called_with(ANY, ANY, [("APID", "CTID")], id(queue))
             finally:
                 broker.context_handler = ori_context_handler
 

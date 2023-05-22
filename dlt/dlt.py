@@ -9,6 +9,7 @@ import socket
 import struct
 import time
 import threading
+import multiprocessing
 
 from dlt.core import (
     cDLTFilter,
@@ -613,7 +614,10 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self.indexed = False
         self.end = False
         self.live_run = kwords.pop("is_live", False)
+        # Stop event for threading usage in caller
         self.stop_reading = threading.Event()
+        # Stop event for process usage in caller
+        self.stop_reading_proc = multiprocessing.Event()
 
     def __repr__(self):
         # pylint: disable=bad-continuation
@@ -764,7 +768,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
     def _open_file(self):
         """Open the configured file for processing"""
         file_opened = False
-        while not self.stop_reading.is_set():
+        while not self.stop_reading.is_set() and not self.stop_reading_proc.is_set():
             if dltlib.dlt_file_open(ctypes.byref(self), self.filename, self.verbose) >= DLT_RETURN_OK:
                 file_opened = True
                 break
@@ -801,7 +805,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self._open_file()
 
         found_data = False
-        while not self.stop_reading.is_set() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
+        while (
+            not self.stop_reading.is_set() and not self.stop_reading_proc.is_set()
+        ) or corruption_check_try:  # pylint: disable=too-many-nested-blocks
             os_stat = os.stat(self.filename)
             mtime = os_stat.st_mtime
 
@@ -1037,6 +1043,34 @@ class DLTClient(cDltClient):
         """Executes native dlt_client_main_loop() after registering msg_callback method as callback"""
         dltlib.dlt_client_register_message_callback(self.msg_callback)
         dltlib.dlt_client_main_loop(ctypes.byref(self), None, self.verbose)
+
+
+def py_dlt_file_main_loop(dlt_reader, limit=None, callback=None):
+    """Main loop to read dlt messages from dlt file."""
+    try:
+        for msg in dlt_reader:
+            logger.debug(
+                "Message from position %d and counter %d: %s", dlt_reader.file_position, dlt_reader.counter, msg
+            )
+
+            # send the message to the callback and check whether we
+            # need to continue
+            if callback and not callback(msg):
+                logger.debug("callback returned 'False'. Stopping main loop")
+                return False
+
+            if limit:
+                limit -= 1
+                if limit == 0:
+                    break
+    except IOError as err:
+        # If the dlt file is empty, main_loop should not break, so it returns True
+        if str(err) == DLT_EMPTY_FILE_ERROR:
+            logger.debug("Dlt file is empty now. Wait until content is written")
+            return True
+        raise err
+
+    return True
 
 
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
