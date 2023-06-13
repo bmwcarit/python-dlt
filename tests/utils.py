@@ -134,6 +134,19 @@ file_with_lifecycles_without_start = (
 )
 
 
+def append_stream_to_file(stream, file_name):
+    msgs = create_messages(stream, from_file=True)
+    for msg in msgs:
+        append_message_to_file(msg, file_name)
+
+
+def append_message_to_file(message, file_name):
+    # Use 'ab' instead of 'wb' because it is to append instead to overwrite
+    with open(file_name, "ab") as file:
+        file.write(message.to_bytes())
+        file.flush()
+
+
 def create_messages(stream, from_file=False):
     if from_file is False:
         stream.seek(0)

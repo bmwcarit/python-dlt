@@ -2,6 +2,7 @@
 """Handlers are classes that assist dlt_broker in receiving and
 filtering DLT messages
 """
+from abc import ABC, abstractmethod
 from collections import defaultdict
 import ctypes
 import logging
@@ -11,7 +12,14 @@ import socket
 import time
 from threading import Thread, Event
 
-from dlt.dlt import DLTClient, DLT_DAEMON_TCP_PORT, py_dlt_client_main_loop
+from dlt.dlt import (
+    DLTClient,
+    DLT_DAEMON_TCP_PORT,
+    cDLT_FILE_NOT_OPEN_ERROR,
+    load,
+    py_dlt_client_main_loop,
+    py_dlt_file_main_loop,
+)
 
 
 DLT_CLIENT_TIMEOUT = 5
@@ -199,54 +207,30 @@ class DLTContextHandler(Thread):
             self.join()
 
 
-class DLTMessageHandler(Process):
-    """Process receiving the DLT messages and handing them to DLTContextHandler
+class DLTMessageDispatcherBase(ABC, Process):
+    """Base class for different dlt message dispatchers
 
-    This process instance is responsible for collecting messages from
-    the DLT daemon, tagging them with the correct queue id and placing
-    them on the messages queue.
+    The derived class could dispatch dlt messages from dlt-daemon, or from at-runtime written file.
     """
 
-    def __init__(
-        self, filter_queue, message_queue, mp_stop_event, client_cfg, dlt_time_value=None, filter_ack_queue=None
-    ):
+    def __init__(self, filter_queue, message_queue, mp_stop_event, dlt_time_value=None, filter_ack_queue=None):
+        """
+        Common members needed for common dispatching behavirours
+
+        :param Queue filter_queue: contexts for filtering received dlt message
+        :param Queue message_queue: received dlt messages after filtering against context
+        :param multiprocessing.Event mp_stop_event: stop signal for this process
+        :param bool enable_dlt_time: Record the latest dlt message timestamp if enabled.
+        :param bool filter_ack_queue: acks for accepting contexts
+        """
+        super().__init__()
         self.filter_queue = filter_queue
         self.filter_ack_queue = filter_ack_queue
         self.message_queue = message_queue
         self.mp_stop_flag = mp_stop_event
-        super(DLTMessageHandler, self).__init__()
-
         # - dict mapping filters to queue ids
         self.context_map = defaultdict(list)
-
-        self._ip_address = client_cfg["ip_address"]
-        self._port = client_cfg.get("port", DLT_DAEMON_TCP_PORT)
-        self._filename = client_cfg.get("filename")
-        self.verbose = client_cfg.get("verbose", 0)
-        self.timeout = client_cfg.get("timeout", DLT_CLIENT_TIMEOUT)
-        self._client = None
-        self.tracefile = None
-
         self._dlt_time_value = dlt_time_value
-
-    def _client_connect(self):
-        """Create a new DLTClient
-
-        :param int timeout: Time in seconds to wait for connection.
-        :returns: True if connected, False otherwise
-        :rtype: bool
-        """
-        logger.debug(
-            "Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')",
-            self._ip_address,
-            self._port,
-            self._filename,
-        )
-        self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
-        connected = self._client.connect(self.timeout)
-        if connected:
-            logger.info("DLTClient connected to %s", self._client.servIP)
-        return connected
 
     def _process_filter_queue(self):
         """Check if filters have been added or need to be removed"""
@@ -277,6 +261,11 @@ class DLTMessageHandler(Process):
                 logger.debug("Send filter ack message: queue_ack_id: %s, add: %s", queue_ack_id, add)
                 self.filter_ack_queue.put((queue_ack_id, add))
 
+    @abstractmethod
+    def is_valid_message(self, message):
+        """Validate if the received message is a valid message according to AUTOSAR doc"""
+        return True
+
     def handle(self, message):
         """Function to be called for every message received
 
@@ -286,7 +275,7 @@ class DLTMessageHandler(Process):
         """
         self._process_filter_queue()
 
-        if message and (message.apid != "" or message.ctid != ""):
+        if self.is_valid_message(message):
             # Dispatch the message
             msg_ctx = ((message.apid, message.ctid), (None, None), (message.apid, None), (None, message.ctid))
             qids = (
@@ -305,6 +294,133 @@ class DLTMessageHandler(Process):
                 self._dlt_time_value.timestamp = message.storage_timestamp
 
         return not self.mp_stop_flag.is_set()
+
+    @abstractmethod
+    def run(self) -> None:
+        pass
+
+    def break_blocking_main_loop(self):
+        """All message dispatchers need a main loop to fetch dlt messages from source.
+        If it could constantly dispatch messages, then the main loop will not get into blocking state.
+        Only when no more message could not be dispatched, the main loop would get into blocking state.
+
+        Not all message dispatchers need to implement this method"""
+        pass
+
+
+class DLTFileSpinner(DLTMessageDispatcherBase):
+    """Process receiving the DLT messages and handing them to DLTContextHandler
+
+    This process instance is responsible for collecting messages from
+    the at-runtime written dlt log, tagging them with the correct queue id and placing
+    them on the messages queue.
+    """
+
+    def __init__(
+        self, filter_queue, message_queue, mp_stop_event, file_name, dlt_time_value=None, filter_ack_queue=None
+    ):
+        super().__init__(filter_queue, message_queue, mp_stop_event, dlt_time_value, filter_ack_queue)
+        self.file_name = file_name
+        self.dlt_reader = load(filename=self.file_name, live_run=True)
+
+    def is_valid_message(self, message):
+        """According to AUTOSAR doc, message with empty apid and empty ctid is still valid"""
+        return message is not None
+
+    def run(self):
+        """DLTFileSpinner worker method"""
+        logger.info("Start to process dlt file %s", self.file_name)
+        # Even though dlt connector for ioc should only be instantiated after successful SerialConsole with fibex,
+        # the corner case of not-existing dlt file will still be handled here with max 5 retires
+        retries_for_non_existing_file = 5
+
+        while not self.mp_stop_flag.is_set():
+            try:
+                logger.debug("py_dlt_file_main_loop")
+                res = py_dlt_file_main_loop(self.dlt_reader, callback=self.handle)
+                if res is False and not self.mp_stop_flag.is_set():  # main loop returned False
+                    logger.error("Too many bad messages read from %s", self.file_name)
+                    self.mp_stop_flag.set()
+                    break
+            except KeyboardInterrupt:
+                logger.debug("main loop manually interrupted")
+                break
+            except IOError as err:
+                if str(err) == cDLT_FILE_NOT_OPEN_ERROR:
+                    # Not every time of non-existing file, cDLTFile will report error
+                    # Sometimes, it simply works through without issue.
+                    # So, no unittest could be done for this error handling
+                    if retries_for_non_existing_file == 0:
+                        logger.error("After retries, dlt file %s still does not exist", self.file_name)
+                        raise err
+                    logger.warning(
+                        "DLT file %s does not exist, will try %d times again",
+                        self.file_name,
+                        retries_for_non_existing_file,
+                    )
+                    retries_for_non_existing_file = retries_for_non_existing_file - 1
+                    time.sleep(1)
+                else:
+                    raise err
+            except Exception:  # pylint: disable=broad-except
+                logger.exception("Exception during the DLT message receive")
+
+        logger.debug("DLTFileSpinner starts to quit...")
+        if not self.dlt_reader.stop_reading_proc.is_set():
+            self.dlt_reader.stop_reading_proc.set()
+        self.message_queue.close()
+        logger.info("DLTFileSpinner worker execution complete")
+
+    def break_blocking_main_loop(self):
+        """A big user for DLTFileSpinner is IOC dlt, which does not have so many dlt messages as HU,
+        so it is quite easy for the main loop to get into blocking state,
+        at the moment that no more dlt messages could be dispatched.
+        """
+        logger.debug("Stop iterating to file %s", self.file_name)
+        self.dlt_reader.stop_reading_proc.set()
+
+
+class DLTMessageHandler(DLTMessageDispatcherBase):
+    """Process receiving the DLT messages and handing them to DLTContextHandler
+
+    This process instance is responsible for collecting messages from
+    the DLT daemon, tagging them with the correct queue id and placing
+    them on the messages queue.
+    """
+
+    def __init__(
+        self, filter_queue, message_queue, mp_stop_event, client_cfg, dlt_time_value=None, filter_ack_queue=None
+    ):
+        super().__init__(filter_queue, message_queue, mp_stop_event, dlt_time_value, filter_ack_queue)
+        self._ip_address = client_cfg["ip_address"]
+        self._port = client_cfg.get("port", DLT_DAEMON_TCP_PORT)
+        self._filename = client_cfg.get("filename")
+        self.verbose = client_cfg.get("verbose", 0)
+        self.timeout = client_cfg.get("timeout", DLT_CLIENT_TIMEOUT)
+        self._client = None
+        self.tracefile = None
+
+    def is_valid_message(self, message):
+        return message and (message.apid != "" or message.ctid != "")
+
+    def _client_connect(self):
+        """Create a new DLTClient
+
+        :param int timeout: Time in seconds to wait for connection.
+        :returns: True if connected, False otherwise
+        :rtype: bool
+        """
+        logger.debug(
+            "Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')",
+            self._ip_address,
+            self._port,
+            self._filename,
+        )
+        self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
+        connected = self._client.connect(self.timeout)
+        if connected:
+            logger.info("DLTClient connected to %s", self._client.servIP)
+        return connected
 
     def run(self):
         """DLTMessageHandler worker method"""
