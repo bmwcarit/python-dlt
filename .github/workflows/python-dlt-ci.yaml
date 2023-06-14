@@ -24,7 +24,7 @@ jobs:
         with:
           image: python-dlt/python-dlt-unittest:${{ matrix.LIBDLT_VERSION }}
           options: -v ${{ github.workspace }}:/pydlt -w /pydlt
-          run: tox -e lint
+          run: tox -e black,ruff
       - name: Run unit test
         uses: addnab/docker-run-action@v3
         with:
