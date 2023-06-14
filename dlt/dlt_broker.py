@@ -1,6 +1,7 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """DLT Broker is running in a loop in a separate thread until stop_flag is set and adding received messages
-to all registered queues"""
+to all registered queues
+"""
 from contextlib import contextmanager
 import ipaddress as ip
 import logging
@@ -64,7 +65,6 @@ class DLTBroker(object):
         :param bool ignore_filter_set_ack_timeout: Ignore the timeout when the value is True
         :param **kwargs: All other args passed to DLTMessageHandler
         """
-
         # - dlt-time share memory init
         self._dlt_time_value = DLTTimeValue() if enable_dlt_time else None
 

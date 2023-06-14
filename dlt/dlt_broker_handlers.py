@@ -304,7 +304,8 @@ class DLTMessageDispatcherBase(ABC, Process):
         If it could constantly dispatch messages, then the main loop will not get into blocking state.
         Only when no more message could not be dispatched, the main loop would get into blocking state.
 
-        Not all message dispatchers need to implement this method"""
+        Not all message dispatchers need to implement this method
+        """
         pass
 
 

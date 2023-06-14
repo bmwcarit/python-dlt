@@ -38,8 +38,12 @@ include = ["dlt*"]
 exclude = ["playbook*", "zuul.d*", "extracted_files*", "tests"]
 
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=45", "setuptools-git-versioning"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools-git-versioning]
+enabled = true
+dev_template = "{tag}.dev{ccount}+{sha}"
 
 [tool.black]
 line-length = 119
@@ -64,3 +68,42 @@ exclude = '''
   | _version.py
 )
 '''
+
+[tool.ruff]
+line-length = 119
+select = ["E", "F", "Q", "D"]
+# the following is equivalent to --docstring-convention=pep8
+extend-ignore = [
+    "D100",
+    "D107",
+    "D105",
+    "D401",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D200",
+    "D400",
+    "D203",
+    "D205",
+    "D212",
+    "D213",
+    "D214",
+    "D215",
+    "D404",
+    "D405",
+    "D406",
+    "D407",
+    "D408",
+    "D409",
+    "D410",
+    "D411",
+    "D413",
+    "D415",
+    "D416",
+    "D417",
+]
+
+# D104: Missing docstring in public package
+# This D104 error will be ignored only in __init__ files
+per-file-ignores = {"__init__.py" = ["D104"]}

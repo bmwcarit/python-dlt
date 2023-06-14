@@ -20,7 +20,6 @@ def fake_py_dlt_client_main_loop(client, callback, *args, **kwargs):
 @contextmanager
 def dlt_broker(pydlt_main_func=fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=False):
     """Initialize a fake DLTBroker"""
-
     with patch("dlt.dlt_broker_handlers.DLTMessageHandler._client_connect"), patch(
         "dlt.dlt_broker_handlers.py_dlt_client_main_loop", side_effect=pydlt_main_func
     ):
@@ -224,7 +223,6 @@ def test_add_context_with_ack_warning():
 
 def test_start_stop_dlt_filter_ack_msg_handler():
     """Test to start/stop DLTFilterAckMessageHandler normally"""
-
     with dlt_filter_ack_msg_handler() as (handler, _):
         pass
 

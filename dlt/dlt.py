@@ -95,7 +95,7 @@ class DLTFilter(cDLTFilter):
             raise RuntimeError("Could not cleanup DLTFilter")
 
     def __repr__(self):
-        """return the 'official' string representation of an object"""
+        """Return the 'official' string representation of an object"""
         apids = [ctypes.string_at(entry[:DLT_ID_SIZE]) for entry in self.apid]
         ctids = [ctypes.string_at(entry[:DLT_ID_SIZE]) for entry in self.ctid]
 
@@ -287,7 +287,6 @@ class DLTMessage(cDLTMessage, MessageMode):
     @staticmethod
     def from_bytes(data):
         """Create a class instance from a byte string in DLT storage format"""
-
         msg = DLTMessage()
         storageheader, remainder = msg.extract_storageheader(data)
 
@@ -863,7 +862,8 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
 
 class DLTClient(cDltClient):
     """DLTClient class takes care about correct initialization and
-    cleanup"""
+    cleanup
+    """
 
     verbose = 0
 
@@ -1076,7 +1076,8 @@ def py_dlt_file_main_loop(dlt_reader, limit=None, callback=None):
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 def py_dlt_client_main_loop(client, limit=None, verbose=0, dumpfile=None, callback=None):
     """Reimplementation of dlt_client.c:dlt_client_main_loop() in order to handle callback
-    function return value"""
+    function return value
+    """
     bad_messages = 0
     while True:
         if bad_messages > 100:
