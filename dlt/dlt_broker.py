@@ -279,3 +279,7 @@ class DLTBroker(object):
             return self._dlt_time_value.timestamp
 
         raise RuntimeError("Getting dlt time function is not enabled")
+
+    @property
+    def is_injectable(self) -> bool:
+        return bool(self._ip_address)
