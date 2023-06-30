@@ -767,7 +767,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
     def _open_file(self):
         """Open the configured file for processing"""
         file_opened = False
-        while not self.stop_reading.is_set() and not self.stop_reading_proc.is_set():
+        while not self._is_stop_reading_set():
             if dltlib.dlt_file_open(ctypes.byref(self), self.filename, self.verbose) >= DLT_RETURN_OK:
                 file_opened = True
                 break
@@ -791,6 +791,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
             self.msg.ctid,
         )
 
+    def _is_stop_reading_set(self):
+        return self.stop_reading.is_set() or self.stop_reading_proc.is_set()
+
     def __iter__(self):  # pylint: disable=too-many-branches
         """Iterate over messages in the file"""
         logger.debug("Starting File Read")
@@ -804,9 +807,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self._open_file()
 
         found_data = False
-        while (
-            not self.stop_reading.is_set() and not self.stop_reading_proc.is_set()
-        ) or corruption_check_try:  # pylint: disable=too-many-nested-blocks
+        while not self._is_stop_reading_set() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
             os_stat = os.stat(self.filename)
             mtime = os_stat.st_mtime
 
@@ -814,7 +815,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                 cached_mtime = mtime
                 corruption_check_try = False
 
-                while dltlib.dlt_file_read(ctypes.byref(self), self.verbose) >= DLT_RETURN_OK:
+                while not self._is_stop_reading_set() and (
+                    dltlib.dlt_file_read(ctypes.byref(self), self.verbose) >= DLT_RETURN_OK
+                ):
                     found_data = True
                     if (
                         self.filter
