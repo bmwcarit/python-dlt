@@ -783,10 +783,11 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         """Logs current message for progress information"""
         length = os.stat(self.filename).st_size
         logger.debug(
-            "Processed %s messages (%s%% of %sfile), next message is apid %s, ctid %s",
+            "Processed %s messages (%s%% of %sfile) from %s, next message is apid %s, ctid %s",
             self.position,
             int(100 * self.file_position / length),
             "live " if self.live_run else "",
+            self.filename,
             self.msg.apid,
             self.msg.ctid,
         )
@@ -1052,10 +1053,6 @@ def py_dlt_file_main_loop(dlt_reader, limit=None, callback=None):
     """Main loop to read dlt messages from dlt file."""
     try:
         for msg in dlt_reader:
-            logger.debug(
-                "Message from position %d and counter %d: %s", dlt_reader.file_position, dlt_reader.counter, msg
-            )
-
             # send the message to the callback and check whether we
             # need to continue
             if callback and not callback(msg):
