@@ -55,8 +55,9 @@ Here are examples of some interesting ways to use these classes:
 
 ```python
     >>> from dlt import dlt
-    >>> # DLTFile object can be obtained by lading a trace file
+    >>> # DLTFile object can be obtained by loading a trace file
     >>> d = dlt.load("high_full_trace.dlt")
+    >>> d.generate_index()      # Read the whole trace file and generate its index
     >>> print(d.counter_total)  # number of DLT messages in the file
     ...
     >>> print(d[0])             # messages can be indexed
