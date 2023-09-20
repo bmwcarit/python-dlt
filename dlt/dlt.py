@@ -1019,7 +1019,7 @@ class DLTClient(cDltClient):
         if msg.standardheader.htyp & DLT_HTYP_WEID:
             dltlib.dlt_set_storageheader(msg.p_storageheader, msg.headerextra.ecu)
         else:
-            dltlib.dlt_set_storageheader(msg.p_storageheader, ctypes.c_char_p(""))
+            dltlib.dlt_set_storageheader(msg.p_storageheader, ctypes.c_char_p(b""))
 
         return msg
 
@@ -1038,7 +1038,7 @@ class DLTClient(cDltClient):
         if msg.contents.p_standardheader.contents.htyp & DLT_HTYP_WEID:
             dltlib.dlt_set_storageheader(msg.contents.p_storageheader, msg.contents.headerextra.ecu)
         else:
-            dltlib.dlt_set_storageheader(msg.contents.p_storageheader, ctypes.c_char_p(""))
+            dltlib.dlt_set_storageheader(msg.contents.p_storageheader, ctypes.c_char_p(b""))
 
         print(msg.contents)
         return 0
