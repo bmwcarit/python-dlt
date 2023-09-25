@@ -929,7 +929,8 @@ class DLTClient(cDltClient):
         connected = None
         error_count = 0
         if not self.is_udp_multicast:
-            logger.info("Connecting DLTClient using TCP Connection")
+            if self.verbose:
+                logger.info("Connecting DLTClient using TCP Connection")
             if timeout:
                 end_time = time.time() + timeout
                 while time.time() < end_time:
@@ -939,7 +940,7 @@ class DLTClient(cDltClient):
                             (ctypes.string_at(self.servIP), self.port), timeout=timeout_remaining
                         )
                     except IOError as exc:
-                        if error_count < MAX_LOG_IN_ROW:
+                        if error_count < MAX_LOG_IN_ROW and self.verbose:
                             logger.debug(
                                 "DLT client connect failed to connect to %s:%s : %s", self.servIP, self.port, exc
                             )
@@ -966,14 +967,16 @@ class DLTClient(cDltClient):
                 # connection loss in the main_loop below as described at
                 # http://stefan.buettcher.org/cs/conn_closed.html
                 self._connected_socket = socket.fromfd(self.sock, socket.AF_INET6, socket.SOCK_STREAM)
-            if error_count > MAX_LOG_IN_ROW:
+            if error_count > MAX_LOG_IN_ROW and self.verbose:
                 logger.debug("Surpressed %d messages for failed connection attempts", error_count - MAX_LOG_IN_ROW)
 
         else:
-            logger.info("Connecting DLTClient using UDP Connection")
+            if self.verbose:
+                logger.info("Connecting DLTClient using UDP Connection")
             connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
 
-        logger.info("DLT Connection return: %s", connected)
+        if self.verbose:
+            logger.info("DLT Connection return: %s", connected)
         return connected == DLT_RETURN_OK
 
     def disconnect(self):

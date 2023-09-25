@@ -400,6 +400,8 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
         self.timeout = client_cfg.get("timeout", DLT_CLIENT_TIMEOUT)
         self._client = None
         self.tracefile = None
+        self.last_connected = time.time()
+        self.last_message = time.time() - 120.0
 
     def is_valid_message(self, message):
         return message and (message.apid != "" or message.ctid != "")
@@ -411,12 +413,13 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
         :returns: True if connected, False otherwise
         :rtype: bool
         """
-        logger.debug(
-            "Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')",
-            self._ip_address,
-            self._port,
-            self._filename,
-        )
+        if self.verbose:
+            logger.debug(
+                "Creating DLTClient (ip_address='%s', Port='%s', logfile='%s')",
+                self._ip_address,
+                self._port,
+                self._filename,
+            )
         self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
         connected = self._client.connect(self.timeout)
         if connected:
@@ -434,11 +437,28 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
             if not self._client_connect():
                 # keep trying to reconnect, until we either successfully
                 # connect or the stop_flag is set
+                if time.time() - self.last_message > 60:
+                    # Once per minute log that we still have no DLT Connection
+                    logger.info(
+                        "DLT connection to %s missing since %s seconds",
+                        self._ip_address,
+                        time.time() - self.last_connected,
+                    )
+                    self.last_message = time.time()
                 continue
             try:
+                if self.last_connected:
+                    logger.info(
+                        "DLT connection to %s re-established after %s seconds",
+                        self._ip_address,
+                        time.time() - self.last_connected,
+                    )
+                self.last_connected = time.time()
                 res = py_dlt_client_main_loop(self._client, verbose=0, callback=self.handle, dumpfile=self.tracefile)
                 if res is False and not self.mp_stop_flag.is_set():  # main loop returned False
-                    logger.error("DLT connection lost. Restarting DLT client")
+                    logger.warning("DLT connection to %s lost. Restarting DLT client", self._ip_address)
+                    self.last_connected = time.time()
+                    self.last_message = time.time()
                     exception_occured = True
             except KeyboardInterrupt:
                 exception_occured = True
