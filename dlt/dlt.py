@@ -808,7 +808,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self._open_file()
 
         found_data = False
-        while not self._is_stop_reading_set() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
+        while (
+            not (self.stop_reading.is_set() or self.stop_reading_proc.is_set()) or corruption_check_try
+        ):  # pylint: disable=too-many-nested-blocks
             os_stat = os.stat(self.filename)
             mtime = os_stat.st_mtime
 
@@ -816,7 +818,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                 cached_mtime = mtime
                 corruption_check_try = False
 
-                while not self._is_stop_reading_set() and (
+                while not (self.stop_reading.is_set() or self.stop_reading_proc.is_set()) and (
                     dltlib.dlt_file_read(ctypes.byref(self), self.verbose) >= DLT_RETURN_OK
                 ):
                     found_data = True
