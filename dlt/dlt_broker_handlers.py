@@ -15,6 +15,8 @@ from threading import Thread, Event
 from dlt.dlt import (
     DLTClient,
     DLT_DAEMON_TCP_PORT,
+    DLT_UDP_MULTICAST_BUFFER_SIZE,
+    DLT_UDP_MULTICAST_FD_BUFFER_SIZE,
     cDLT_FILE_NOT_OPEN_ERROR,
     load,
     py_dlt_client_main_loop,
@@ -402,6 +404,8 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
         self.tracefile = None
         self.last_connected = time.time()
         self.last_message = time.time() - 120.0
+        self._udp_fd_buffer_size_bytes = client_cfg.get("udp_fd_buffer_size_bytes", DLT_UDP_MULTICAST_FD_BUFFER_SIZE)
+        self._udp_buffer_size_bytes = client_cfg.get("udp_buffer_size_bytes", DLT_UDP_MULTICAST_BUFFER_SIZE)
 
     def is_valid_message(self, message):
         return message and (message.apid != "" or message.ctid != "")
@@ -420,7 +424,13 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
                 self._port,
                 self._filename,
             )
-        self._client = DLTClient(servIP=self._ip_address, port=self._port, verbose=self.verbose)
+        self._client = DLTClient(
+            servIP=self._ip_address,
+            port=self._port,
+            verbose=self.verbose,
+            udp_fd_buffer_size_bytes=self._udp_fd_buffer_size_bytes,
+            udp_buffer_size_bytes=self._udp_buffer_size_bytes,
+        )
         connected = self._client.connect(self.timeout)
         if connected:
             logger.info("DLTClient connected to %s", self._client.servIP)
