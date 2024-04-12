@@ -56,6 +56,9 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 DLT_EMPTY_FILE_ERROR = "DLT TRACE FILE IS EMPTY"
 cDLT_FILE_NOT_OPEN_ERROR = "Could not open DLT Trace file (libdlt)"  # pylint: disable=invalid-name
 
+DLT_UDP_MULTICAST_FD_BUFFER_SIZE = int(os.environ.get("PYDLT_UDP_MULTICAST_FD_BUFFER_SIZE", 2 * (2**20)))  # 2 Mb
+DLT_UDP_MULTICAST_BUFFER_SIZE = int(os.environ.get("PYDLT_UDP_MULTICAST_BUFFER_SIZE", 8 * (2**20)))  # 8 Mb
+
 
 class cached_property(object):  # pylint: disable=invalid-name
     """
@@ -865,13 +868,23 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
 
 
 class DLTClient(cDltClient):
-    """DLTClient class takes care about correct initialization and
-    cleanup
-    """
+    """DLTClient class takes care about correct initialization and cleanup"""
 
     verbose = 0
 
     def __init__(self, **kwords):
+        """Initialize a DLTClient.
+
+        :param servIP: Optional[str] - dlt server IP.
+        :param hostIP: Optional[str] - Only available for udp multicast mode.
+            Set host interface address.
+        :param port: Optional[int] - dlt tcp daemon port.
+        :param verbose: Optional[bool] - Enable verbose output.
+        :param udp_fd_buffer_size_bytes: Optional[int] - Only available for udp
+            multicast mode. Set the UDP buffer size through setsockopt (unit: bytes).
+        :param udp_buffer_size_bytes: Optional[int] - Only available for udp
+            multicast mode. Set the DltReceiver's buffer size (unit: bytes).
+        """
         self.is_udp_multicast = False
         self.verbose = kwords.pop("verbose", 0)
         if dltlib.dlt_client_init(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
@@ -914,6 +927,9 @@ class DLTClient(cDltClient):
         # (re)set self.port, even for API version <2.16.0 since we use
         # it ourselves elsewhere
         self.port = kwords.get("port", DLT_DAEMON_TCP_PORT)
+
+        self._udp_fd_buffer_size_bytes = kwords.get("udp_fd_buffer_size_bytes", DLT_UDP_MULTICAST_FD_BUFFER_SIZE)
+        self._udp_buffer_size_bytes = kwords.get("udp_buffer_size_bytes", DLT_UDP_MULTICAST_BUFFER_SIZE)
 
     def connect(self, timeout=None):
         """Connect to the server
@@ -973,7 +989,9 @@ class DLTClient(cDltClient):
         else:
             if self.verbose:
                 logger.info("Connecting DLTClient using UDP Connection")
+
             connected = dltlib.dlt_client_connect(ctypes.byref(self), self.verbose)
+            self._set_udp_multicast_buffer_size()
 
         if self.verbose:
             logger.info("DLT Connection return: %s", connected)
@@ -1050,6 +1068,54 @@ class DLTClient(cDltClient):
         """Executes native dlt_client_main_loop() after registering msg_callback method as callback"""
         dltlib.dlt_client_register_message_callback(self.msg_callback)
         dltlib.dlt_client_main_loop(ctypes.byref(self), None, self.verbose)
+
+    def _set_udp_multicast_buffer_size(self, custom_fd_buffer_size_bytes=None, custom_buffer_size_bytes=None) -> None:
+        fd_buffer_size = int(self._udp_fd_buffer_size_bytes or custom_fd_buffer_size_bytes or 0)
+        buffer_size_bytes = int(self._udp_buffer_size_bytes or custom_buffer_size_bytes or 0)
+
+        if fd_buffer_size:
+            # Socket options are associated with an open file description. This
+            # means that file descriptors duplicated as a consequence of dup()
+            # (or similar) or fork() share the same set of socket options.
+            #     -- Chapter 61.9 Socket Options.
+            #        The Linux Programming Interface, p.1279
+            #
+            # The buffer size can be changed with a new fd which is created by
+            # dup system call (it's the internal implementation in
+            # `socket.fromfd`), so the code creates a socket instance first
+            # configures  it and directly close it.
+            with socket.fromfd(self.sock, socket.AF_INET, socket.SOCK_DGRAM) as conf_socket:
+                logger.debug("Set UDP Multicast socket buffer size: %s kbytes", fd_buffer_size / 1024)
+                conf_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, fd_buffer_size)
+
+                real_buffer_size = int(conf_socket.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF) / 2)
+                if real_buffer_size != fd_buffer_size:
+                    logger.warning(
+                        (
+                            "Failed to set UDP Multicast buffer size. set_size: %s, real_size: %s. "
+                            "Bypass the error and continue"
+                        ),
+                        fd_buffer_size / 1024,
+                        real_buffer_size / 1024,
+                    )
+                    logger.warning(
+                        (
+                            "Please run command `sysctl -w net.core.rmem_max=%s` with root permission to "
+                            "set the maximum size and restart dlt again."
+                        ),
+                        fd_buffer_size,
+                    )
+
+        if buffer_size_bytes:
+            logger.debug("Set UDP Multicast DltReceiver buffer size: %s kbytes", buffer_size_bytes / 1024)
+            ret = dltlib.dlt_receiver_init(
+                ctypes.byref(self.receiver), self.sock, self.receiver.type, buffer_size_bytes
+            )
+            if ret < 0:
+                raise RuntimeError(
+                    f"Failed to set UDP Multicast DltReceiver buffer size. return code: {ret}, "
+                    f"buffer_size_bytes: {buffer_size_bytes}"
+                )
 
 
 def py_dlt_file_main_loop(dlt_reader, limit=None, callback=None):
