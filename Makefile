@@ -1,5 +1,5 @@
-# Non released dlt-daemon version based on 2.18.8
-LIBDLT_VERSION=v2.18.8
+# Non released dlt-daemon version based on 2.18.10
+LIBDLT_VERSION=v2.18.10
 
 IMAGE=python-dlt/python-dlt-unittest
 TAG?=latest
@@ -12,13 +12,6 @@ all:
 	@echo "  make unit-test       -- Run unit tests with tox (Run 'make build-image' the first time)"
 	@echo "  make build-image     -- Build docker image for the usage of 'make unit-test'"
 	@echo "  make clean           -- Remove all temporary files"
-
-.PHONY: test
-test:
-	mkdir -p junit_reports;
-	nosetests --no-byte-compile \
-		--with-xunit --xunit-file=junit_reports/python-dlt_tests.xml \
-		tests
 
 .PHONY: unit-test
 unit-test:

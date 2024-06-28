@@ -5,7 +5,7 @@ primarily created for use with BMW's test execution framework. However,
 the implementation is independent and the API makes few assumptions about
 the intended use.
 
-Note: This is only tested with libdlt version v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) and v2.18.8,
+Note: This is only tested with libdlt version v2.18.8 and v2.18.10,
 later versions might require adaptations. The package will not support previous libdlt
 versions from python-dlt v2.0. Also only GENIVI DLT daemon produced traces
 have been tested.
@@ -119,3 +119,25 @@ The DLTBroker abstracts out the management of 2 (multiprocessing) queues:
   example, via a request from `DLTContext`). This is run as a separate thread in
   the `DLTBroker` process. The code for this is in
   `dlt.dlt_broker_handlers.DLTContextHandler`.
+
+## Running tox on a local machine
+
+In order to run tox command for this repository, please perform the following:
+
+1. Build a docker image from the `Dockerfile` provided using:
+
+```commandline
+$ docker build -t python-dlt -f Dockerfile .
+```
+
+2. Run the tox in the docker container using:
+
+```commandline
+$ docker run -it --rm --volume $(pwd):/workspace python-dlt /bin/sh -xc "tox -e py3,lint"
+```
+
+3. [Special Case] Getting an interactive shell inside the docker container to run arbitrary commands:
+
+```commandline
+$ docker run -it --rm --volume $(pwd):/workspace --entrypoint sh python-dlt
+```
