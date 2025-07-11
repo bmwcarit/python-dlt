@@ -1,0 +1,6 @@
+sphinx==5.1.1
+sphinx-multiversion==0.2.4
+sphinx_rtd_theme==0.5.2 # NB: when upgrading, do not forget to check the templates in _templates!
+sphinxcontrib-images==0.9.4
+sphinxcontrib-apidoc
+sphinx-click
