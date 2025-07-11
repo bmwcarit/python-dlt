@@ -71,9 +71,9 @@ exclude = '''
 
 [tool.ruff]
 line-length = 119
-select = ["E", "F", "Q", "D"]
+lint.select = ["E", "F", "Q", "D"]
 # the following is equivalent to --docstring-convention=pep8
-extend-ignore = [
+lint.extend-ignore = [
     "D100",
     "D107",
     "D105",
@@ -106,4 +106,7 @@ extend-ignore = [
 
 # D104: Missing docstring in public package
 # This D104 error will be ignored only in __init__ files
-per-file-ignores = {"__init__.py" = ["D104"]}
+lint.per-file-ignores = {"__init__.py" = ["D104"]}
+
+[tool.bandit]
+exclude_dirs = ["tests", ".tox"]

@@ -7,6 +7,7 @@ import os
 import re
 import socket
 import struct
+import sys
 import time
 import threading
 import multiprocessing
@@ -30,8 +31,10 @@ from dlt.core import (
     cDLTMessage,
     cDltStorageHeader,
     cDltStandardHeader,
+    DLT_TYPE_INFO_BOOL,
     DLT_TYPE_INFO_UINT,
     DLT_TYPE_INFO_SINT,
+    DLT_TYPE_INFO_FLOA,
     DLT_TYPE_INFO_STRG,
     DLT_TYPE_INFO_SCOD,
     DLT_TYPE_INFO_TYLE,
@@ -171,7 +174,12 @@ class Payload(object):
                     value = struct.unpack_from("Q", self._buf, offset)[0]
                     offset += 8
                 elif tyle == DLT_TYLE_128BIT:
-                    raise TypeError("reading 128BIT values not supported")
+                    value = struct.unpack_from("QQ", self._buf, offset)
+                    offset += 16
+                    if sys.byteorder == "little":
+                        value = (value[1] << 64) | value[0]
+                    else:
+                        value = (value[0] << 64) | value[1]
 
             elif type_info & DLT_TYPE_INFO_SINT:
                 if type_info & DLT_TYPE_INFO_VARI:
@@ -191,7 +199,20 @@ class Payload(object):
                     value = struct.unpack_from("q", self._buf, offset)[0]
                     offset += 8
                 elif tyle == DLT_TYLE_128BIT:
-                    raise TypeError("reading 128BIT values not supported")
+                    value = struct.unpack_from("qq", self._buf, offset)
+                    offset += 16
+                    if sys.byteorder == "little":
+                        value = (value[1] << 64) | value[0]
+                    else:
+                        value = (value[0] << 64) | value[1]
+
+            elif type_info & DLT_TYPE_INFO_FLOA:
+                if type_info & DLT_TYLE_64BIT:
+                    value = struct.unpack_from("d", self._buf, offset)[0]
+                    offset += 8
+                else:
+                    value = struct.unpack_from("f", self._buf, offset)[0]
+                    offset += 4
 
             elif type_info & DLT_TYPE_INFO_RAWD:
                 if type_info & DLT_TYPE_INFO_VARI:
@@ -202,6 +223,10 @@ class Payload(object):
 
                 value = self._buf[offset : offset + length]
                 offset += length
+
+            elif type_info & DLT_TYPE_INFO_BOOL:
+                value = struct.unpack_from("?", self._buf, offset)[0]
+                offset += 1
 
             else:
                 value = "ERROR"
