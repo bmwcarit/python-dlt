@@ -21,8 +21,9 @@ def fake_py_dlt_client_main_loop(client, callback, *args, **kwargs):
 @contextmanager
 def dlt_broker(pydlt_main_func=fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=False):
     """Initialize a fake DLTBroker"""
-    with patch("dlt.dlt_broker_handlers.DLTMessageHandler._client_connect"), patch(
-        "dlt.dlt_broker_handlers.py_dlt_client_main_loop", side_effect=pydlt_main_func
+    with (
+        patch("dlt.dlt_broker_handlers.DLTMessageHandler._client_connect"),
+        patch("dlt.dlt_broker_handlers.py_dlt_client_main_loop", side_effect=pydlt_main_func),
     ):
         broker = DLTBroker("42.42.42.42", enable_dlt_time=enable_dlt_time, enable_filter_set_ack=enable_filter_set_ack)
         broker.msg_handler._client = MagicMock()
@@ -205,9 +206,10 @@ def test_add_context_with_ack_warning():
     """Test to send a filter-setting message but not received an ack"""
     queue = tqueue.Queue()
 
-    with patch("dlt.dlt_broker.DLTBroker._recv_filter_set_ack", return_value=False) as ack_mock, patch.object(
-        logger, "warning"
-    ) as logger_mock:
+    with (
+        patch("dlt.dlt_broker.DLTBroker._recv_filter_set_ack", return_value=False) as ack_mock,
+        patch.object(logger, "warning") as logger_mock,
+    ):
         with dlt_broker(enable_filter_set_ack=True) as broker:
             ori_context_handler = broker.context_handler
             broker.context_handler = MagicMock()
