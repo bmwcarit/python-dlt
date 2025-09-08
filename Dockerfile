@@ -1,8 +1,8 @@
-ARG BASE_IMAGE=alpine:3.20
+ARG BASE_IMAGE=alpine:3.22
 
 FROM ${BASE_IMAGE}
 
-ARG LIBDLT_VERSION=v2.18.8
+ARG LIBDLT_VERSION=v2.18.10
 
 RUN set -ex \
     && apk add --no-cache build-base musl-dev linux-headers git cmake ninja \
