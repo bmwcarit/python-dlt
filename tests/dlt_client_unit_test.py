@@ -17,13 +17,15 @@ class TestDLTClient(unittest.TestCase):
         self.assertFalse(self.client.connect(timeout=2))
 
         # - dlt_receiver_init error
-        with patch("socket.create_connection", return_value=Mock(fileno=Mock(return_value=2000000))), patch(
-            "dlt.dlt.dltlib.dlt_receiver_init", return_value=DLT_RETURN_ERROR
+        with (
+            patch("socket.create_connection", return_value=Mock(fileno=Mock(return_value=2000000))),
+            patch("dlt.dlt.dltlib.dlt_receiver_init", return_value=DLT_RETURN_ERROR),
         ):
             self.assertFalse(self.client.connect(timeout=2))
 
     def test_connect_with_timeout_success(self):
-        with patch("socket.create_connection", return_value=Mock(fileno=Mock(return_value=2000000))), patch(
-            "dlt.dlt.dltlib.dlt_receiver_init", return_value=DLT_RETURN_OK
+        with (
+            patch("socket.create_connection", return_value=Mock(fileno=Mock(return_value=2000000))),
+            patch("dlt.dlt.dltlib.dlt_receiver_init", return_value=DLT_RETURN_OK),
         ):
             self.assertTrue(self.client.connect(timeout=2))
