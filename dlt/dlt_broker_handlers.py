@@ -436,12 +436,13 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
             logger.info("DLTClient connected to %s", self._client.servIP)
         return connected
 
-    def run(self):
+    def run(self, reconnect_delay=0.1):
         """DLTMessageHandler worker method"""
         if self._filename is not None:
             logger.info("Opening the DLT trace file '%s'", self._filename)
             self.tracefile = open(self._filename, mode="ab", buffering=False)
 
+        is_reconnect = False
         while not self.mp_stop_flag.is_set():
             exception_occured = False
             if not self._client_connect():
@@ -464,6 +465,9 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
                         self._ip_address,
                         time.time() - self.last_connected,
                     )
+                if is_reconnect:
+                    time.sleep(reconnect_delay)
+                    is_reconnect = False
                 self.last_connected = time.time()
                 res = py_dlt_client_main_loop(self._client, verbose=0, callback=self.handle, dumpfile=self.tracefile)
                 if res is False and not self.mp_stop_flag.is_set():  # main loop returned False
@@ -471,6 +475,7 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
                     self.last_connected = time.time()
                     self.last_message = time.time()
                     exception_occured = True
+                    is_reconnect = True
             except KeyboardInterrupt:
                 exception_occured = True
                 logger.debug("main loop manually interrupted")
