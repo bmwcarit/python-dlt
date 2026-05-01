@@ -2,6 +2,7 @@
 """Handlers are classes that assist dlt_broker in receiving and
 filtering DLT messages
 """
+
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import ctypes
@@ -22,7 +23,6 @@ from dlt.dlt import (
     py_dlt_client_main_loop,
     py_dlt_file_main_loop,
 )
-
 
 DLT_CLIENT_TIMEOUT = 5
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name

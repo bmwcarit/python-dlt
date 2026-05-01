@@ -1,5 +1,6 @@
 # Copyright (C) 2023. BMW Car IT GmbH. All rights reserved.
 """Test DLTBroker with message handler DLTFileSpinner"""
+
 import os
 import pytest
 import tempfile

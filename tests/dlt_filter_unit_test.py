@@ -1,5 +1,6 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """Basic unittests for DLTFilter definition"""
+
 import unittest
 
 import ctypes

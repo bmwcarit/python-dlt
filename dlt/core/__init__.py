@@ -1,10 +1,10 @@
 # Copyright (C) 2017. BMW Car IT GmbH. All rights reserved.
 """Basic ctypes binding to the DLT library"""
+
 import ctypes
 import os
 
 from dlt.core.core_base import *  # noqa: F403
-
 
 API_VER = None
 
@@ -35,7 +35,7 @@ def get_api_specific_file(version):
 
     # Fallback logic: Try to find the closest core_*.py
     for i in range(len(version_tuple)):
-        truncated_tuple = version_tuple[:-(i+1)] + [0] * (i+1)
+        truncated_tuple = version_tuple[: -(i + 1)] + [0] * (i + 1)
         name = "core_{}.py".format("".join((str(num) for num in truncated_tuple)))
         if os.path.exists(os.path.join(base_dir, name)):
             return name
@@ -55,10 +55,8 @@ def check_libdlt_version(api_ver):
     """
     ver_info = tuple(int(num) for num in api_ver.split("."))
     if ver_info < (2, 18, 5):
-        raise ImportError(
-            "python-dlt only supports libdlt \
-        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above"
-        )
+        raise ImportError("python-dlt only supports libdlt \
+        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above")
 
 
 API_VER = get_version(dltlib)  # noqa: F405

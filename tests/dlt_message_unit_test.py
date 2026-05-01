@@ -1,5 +1,6 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """Basic unittests for DLT messages"""
+
 import io
 import pickle
 import re
