@@ -81,6 +81,7 @@ class cDLTMessage(ctypes.Structure):
         ("p_extendedheader", ctypes.POINTER(cDltExtendedHeader)),
     ]
     _pack_ = 1
+    _layout_ = "ms"
 
 
 class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
