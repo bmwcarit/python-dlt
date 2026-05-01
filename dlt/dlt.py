@@ -436,15 +436,8 @@ class DLTMessage(cDLTMessage, MessageMode):
             return self.apid == other.apid and self.ctid == other.ctid and self.__eq__(other)
 
         # pylint: disable=protected-access
-        if hasattr(other, "_fields_") and [x[0] for x in other._fields_] == [
-            "apid",
-            "ctid",
-            "log_level",
-            "payload_max",
-            "payload_min",
-            "counter",
-        ]:
-            # other id DLTFilter
+        if hasattr(other, "_fields_") and hasattr(other, "counter") and hasattr(other, "apid"):
+            # other is DLTFilter or cDLTFilter
             return dltlib.dlt_message_filter_check(ctypes.byref(self), ctypes.byref(other), 0)
 
         if not isinstance(other, dict):
