@@ -1,5 +1,6 @@
 # Copyright (C) 2017. BMW Car IT GmbH. All rights reserved.
 """Basic size tests for ctype wrapper definitions, to protect against regressions"""
+
 import ctypes
 import importlib
 import os

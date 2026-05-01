@@ -1,5 +1,6 @@
 # Copyright (C) 2021. BMW Car IT GmbH. All rights reserved.
 """Test DLTBroker with enabling dlt_time"""
+
 from contextlib import contextmanager
 from multiprocessing import Queue
 import queue as tqueue

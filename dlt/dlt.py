@@ -1,5 +1,6 @@
 # Copyright (C) 2015. BMW Car IT GmbH. All rights reserved.
 """Pure Python implementation of DLT library"""
+
 import ctypes
 import ipaddress as ip
 import logging

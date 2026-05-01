@@ -1,5 +1,6 @@
 # Copyright (C) 2022. BMW CTW PT. All rights reserved.
 """v2.18.8 specific class definitions"""
+
 import ctypes
 import logging
 

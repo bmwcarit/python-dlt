@@ -1,5 +1,6 @@
 # Copyright (C) 2016. BMW Car IT GmbH. All rights reserved.
 """Basic unittests for the py_dlt_client_main_loop function"""
+
 import ctypes
 import functools
 from io import BytesIO as StringIO

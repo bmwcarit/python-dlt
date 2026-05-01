@@ -9,7 +9,6 @@ import os
 
 from dlt.dlt import DLTClient, load
 
-
 stream_one = io.BytesIO(b"5\x00\x00 MGHS\xdd\xf6e\xca&\x01DA1\x00DC1\x00\x02\x0f\x00\x00\x00\x02\x00\x00\x00\x00")
 
 stream_with_params = (
