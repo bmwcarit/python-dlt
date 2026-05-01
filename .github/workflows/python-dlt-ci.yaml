@@ -1,6 +1,6 @@
 name: python-dlt-ci-actions
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   run-test-for-python-dlt:
