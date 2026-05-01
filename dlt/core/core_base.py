@@ -209,6 +209,7 @@ class cDltServiceConnectionInfo(ctypes.Structure):
         ("comid", DLT_ID_SIZE * ctypes.c_byte),
     ]
     _pack_ = 1
+    _layout_ = "ms"
 
 
 class MessageMode(object):
@@ -416,6 +417,7 @@ class cDltStorageHeader(ctypes.Structure):
         ("ecu", ctypes.c_char * DLT_ID_SIZE),
     ]
     _pack_ = 1
+    _layout_ = "ms"
 
     def __reduce__(self):
         return (cDltStorageHeader, (self.pattern, self.seconds, self.microseconds, self.ecu))
@@ -434,6 +436,7 @@ class cDltStandardHeader(ctypes.BigEndianStructure):
 
     _fields_ = [("htyp", ctypes.c_uint8), ("mcnt", ctypes.c_uint8), ("len", ctypes.c_ushort)]
     _pack_ = 1
+    _layout_ = "ms"
 
     def __reduce__(self):
         return (cDltStandardHeader, (self.htyp, self.mcnt, self.len))
@@ -452,6 +455,7 @@ class cDltStandardHeaderExtra(ctypes.Structure):
 
     _fields_ = [("ecu", ctypes.c_char * DLT_ID_SIZE), ("seid", ctypes.c_uint32), ("tmsp", ctypes.c_uint32)]
     _pack_ = 1
+    _layout_ = "ms"
 
     def __reduce__(self):
         return (cDltStandardHeaderExtra, (self.ecu, self.seid, self.tmsp))
@@ -476,6 +480,7 @@ class cDltExtendedHeader(ctypes.Structure):
         ("ctid", ctypes.c_char * DLT_ID_SIZE),
     ]
     _pack_ = 1
+    _layout_ = "ms"
 
     def __reduce__(self):
         return (cDltExtendedHeader, (self.msin, self.noar, self.apid, self.ctid))
