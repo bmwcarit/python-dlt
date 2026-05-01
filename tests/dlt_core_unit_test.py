@@ -26,6 +26,13 @@ class TestCoreStructures(unittest.TestCase):
     def test_sizeof(self):
         importlib.import_module("dlt.core")
 
+        api_ver = dlt.core.get_version(dlt.core.dltlib)
+        ver_info = tuple(int(num) for num in api_ver.split("."))
+        if ver_info >= (3, 0, 0):
+            self.size_map["cDLTMessage"] = 103
+            self.size_map["cDltClient"] = 152
+            self.size_map["cDLTFilter"] = 1152
+
         for clsname, expected in self.size_map.items():
             actual = ctypes.sizeof(getattr(dlt.core, clsname))
             self.assertEqual(
@@ -74,11 +81,11 @@ class TestImportSpecificVersion(unittest.TestCase):
             self.assertEqual(filename, self.version_filename)
 
     def test_get_api_specific_file_not_found(self):
-        with patch.object(os.path, "exists", side_effect=[False, False]):
+        with patch.object(os.path, "exists", return_value=False):
             with self.assertRaises(ImportError) as err_cm:
                 dlt.core.get_api_specific_file(self.version_answer.decode())
 
-            self.assertEqual(str(err_cm.exception), "No module file: {}".format(self.version_truncate_filename))
+            self.assertEqual(str(err_cm.exception), "No module file: core_200.py")
 
     def test_get_api_specific_file_truncate_minor_version(self):
         with patch.object(os.path, "exists", side_effect=[False, True]):

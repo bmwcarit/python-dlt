@@ -3,11 +3,20 @@
 import ctypes
 import logging
 import sys
+import ctypes.util
+
+dlt_path = ctypes.util.find_library("dlt")
 
 if sys.platform.startswith("darwin"):
-    dltlib = ctypes.cdll.LoadLibrary("libdlt.dylib")
+    dltlib = ctypes.cdll.LoadLibrary(dlt_path or "libdlt.dylib")
 elif sys.platform.startswith("linux"):
-    dltlib = ctypes.cdll.LoadLibrary("libdlt.so.2")
+    if dlt_path:
+        dltlib = ctypes.cdll.LoadLibrary(dlt_path)
+    else:
+        try:
+            dltlib = ctypes.cdll.LoadLibrary("libdlt.so.3")
+        except OSError:
+            dltlib = ctypes.cdll.LoadLibrary("libdlt.so.2")
 else:
     raise RuntimeError("Platform %s not supported" % sys.platform)
 

@@ -26,20 +26,26 @@ def get_version(loaded_lib):
 
 
 def get_api_specific_file(version):
-    """Return specific version api filename, if not found fallback to first major version release"""
+    """Return specific version api filename, if not found fallback to highest matching version"""
     version_tuple = [int(num) for num in version.split(".")]
     name = "core_{}.py".format("".join((str(num) for num in version_tuple)))
-    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.exists(os.path.join(base_dir, name)):
         return name
 
-    # The minor version does not exist, try to truncate
-    if version_tuple[-1] != 0:
-        version_tuple = version_tuple[:-1] + [0]
-        name = "core_{}.py".format("".join((str(num) for num in version_tuple)))
-        if not os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), name)):
-            raise ImportError("No module file: {}".format(name))
+    # Fallback logic: Try to find the closest core_*.py
+    for i in range(len(version_tuple)):
+        truncated_tuple = version_tuple[:-(i+1)] + [0] * (i+1)
+        name = "core_{}.py".format("".join((str(num) for num in truncated_tuple)))
+        if os.path.exists(os.path.join(base_dir, name)):
+            return name
 
-    return name
+    # If still not found, try to find the highest major version
+    name = "core_{}00.py".format(version_tuple[0])
+    if os.path.exists(os.path.join(base_dir, name)):
+        return name
+
+    raise ImportError("No module file: {}".format(name))
 
 
 def check_libdlt_version(api_ver):

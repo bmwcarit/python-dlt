@@ -1,76 +1,65 @@
-# Copyright (C) 2022. BMW CTW PT. All rights reserved.
-"""v2.18.10 specific class definitions"""
+# Copyright (C) 2024. All rights reserved.
+"""v3.0.0 specific class definitions"""
 
 import ctypes
 import logging
 
-from dlt.core.core_base import dltlib
+from dlt.core.core_base import (
+    dltlib,
+    cDltStorageHeader,
+    cDltStandardHeader,
+    cDltStandardHeaderExtra,
+    cDltExtendedHeader,
+)
 
-# DltClientMode from dlt_client.h
-DLT_CLIENT_MODE_UNDEFINED = -1
-DLT_CLIENT_MODE_TCP = 0
-DLT_CLIENT_MODE_SERIAL = 1
-DLT_CLIENT_MODE_UNIX = 2
-DLT_CLIENT_MODE_UDP_MULTICAST = 3
-
-# DltReceiverType from dlt_common.h
-DLT_RECEIVE_SOCKET = 0
-DLT_RECEIVE_UDP_SOCKET = 1
-DLT_RECEIVE_FD = 2
-DLT_ID_SIZE = 4
-DLT_FILTER_MAX = 30  # Maximum number of filters
-DLT_RETURN_ERROR = -1
-
-# Return value for DLTFilter.add() - exceeded maximum number of filters
-MAX_FILTER_REACHED = 1
-# Return value for DLTFilter.add() - specified filter already exists
-REPEATED_FILTER = 2
+# ruff: noqa: F401
+from dlt.core.core_21810 import (
+    DLT_CLIENT_MODE_UNDEFINED,
+    DLT_CLIENT_MODE_TCP,
+    DLT_CLIENT_MODE_SERIAL,
+    DLT_CLIENT_MODE_UNIX,
+    DLT_CLIENT_MODE_UDP_MULTICAST,
+    DLT_RECEIVE_SOCKET,
+    DLT_RECEIVE_UDP_SOCKET,
+    DLT_RECEIVE_FD,
+    DLT_ID_SIZE,
+    DLT_FILTER_MAX,
+    DLT_RETURN_ERROR,
+    MAX_FILTER_REACHED,
+    REPEATED_FILTER,
+    sockaddr_in,
+    cDltReceiver,
+)
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-class sockaddr_in(ctypes.Structure):  # pylint: disable=invalid-name
-    """Auxiliary definition for cDltReceiver. Defined in netinet/in.h header"""
+class cDLTMessage(ctypes.Structure):
+    """The structure of the DLT messages. Packed in v3."""
 
     _fields_ = [
-        ("sa_family", ctypes.c_ushort),  # sin_family
-        ("sin_port", ctypes.c_ushort),
-        ("sin_addr", ctypes.c_byte * 4),
-        ("__pad", ctypes.c_byte * 8),
-    ]  # struct sockaddr_in is 16
-
-
-class cDltReceiver(ctypes.Structure):  # pylint: disable=invalid-name
-    """The structure is used to organise the receiving of data including buffer handling.
-    This structure is used by the corresponding functions.
-
-    typedef struct
-    {
-        int32_t lastBytesRcvd;    /**< bytes received in last receive call */
-        int32_t bytesRcvd;        /**< received bytes */
-        int32_t totalBytesRcvd;   /**< total number of received bytes */
-        char *buffer;             /**< pointer to receiver buffer */
-        char *buf;                /**< pointer to position within receiver buffer */
-        char *backup_buf;         /** pointer to the buffer with partial messages if any **/
-        int fd;                   /**< connection handle */
-        DltReceiverType type;     /**< type of connection handle */
-        int32_t buffersize;       /**< size of receiver buffer */
-        struct sockaddr_in addr;  /**< socket address information */
-    } DltReceiver;
-    """
-
-    _fields_ = [
-        ("lastBytesRcvd", ctypes.c_int32),
-        ("bytesRcvd", ctypes.c_int32),
-        ("totalBytesRcvd", ctypes.c_int32),
-        ("buffer", ctypes.POINTER(ctypes.c_char)),
-        ("buf", ctypes.POINTER(ctypes.c_char)),
-        ("backup_buf", ctypes.POINTER(ctypes.c_char)),
-        ("fd", ctypes.c_int),
-        ("type", ctypes.c_int),
-        ("buffersize", ctypes.c_int32),
-        ("addr", sockaddr_in),
+        ("found_serialheader", ctypes.c_int8),
+        ("resync_offset", ctypes.c_int32),
+        ("headersize", ctypes.c_int32),
+        ("datasize", ctypes.c_int32),
+        (
+            "headerbuffer",
+            ctypes.c_uint8
+            * (
+                ctypes.sizeof(cDltStorageHeader)
+                + ctypes.sizeof(cDltStandardHeader)
+                + ctypes.sizeof(cDltStandardHeaderExtra)
+                + ctypes.sizeof(cDltExtendedHeader)
+            ),
+        ),
+        ("databuffer", ctypes.POINTER(ctypes.c_uint8)),
+        ("databuffersize", ctypes.c_uint32),
+        ("p_storageheader", ctypes.POINTER(cDltStorageHeader)),
+        ("p_standardheader", ctypes.POINTER(cDltStandardHeader)),
+        ("headerextra", cDltStandardHeaderExtra),
+        ("p_extendedheader", ctypes.POINTER(cDltExtendedHeader)),
     ]
+    _pack_ = 1
 
 
 class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
@@ -79,14 +68,16 @@ class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
     {
         DltReceiver receiver;      /**< receiver pointer to dlt receiver structure */
         int sock;                  /**< sock Connection handle/socket */
-        char *servIP;              /**< servIP IP adress/Hostname of TCP/IP interface */
-        char *hostip;              /**< IP multicast address of group */
-        int port;                  /**< Port for TCP connections (optional) */
+        char *servIP;              /**< servIP IP adress/Hostname of interface */
+        char *hostip;              /**< hostip IP address of UDP host receiver interface */
+        uint16_t  port;            /**< Port for TCP connections (optional) */
         char *serialDevice;        /**< serialDevice Devicename of serial device */
         char *socketPath;          /**< socketPath Unix socket path */
-        char ecuid[4];             /**< ECUiD */
+        char ecuid[4];             /**< ECU id */
+        uint8_t ecuid2len;         /**< Version 2 ECU id length */
+        char *ecuid2;              /**< Version 2 ECU id of variable length*/
         speed_t baudrate;          /**< baudrate Baudrate of serial interface, as speed_t */
-        DltClientMode mode;        /**< mode DltClientMode */
+        int mode;                  /**< mode DltClientMode */
         int send_serial_header;    /**< (Boolean) Send DLT messages with serial header */
         int resync_serial_header;  /**< (Boolean) Resync to serial header on all connection */
     } DltClient;
@@ -97,10 +88,12 @@ class cDltClient(ctypes.Structure):  # pylint: disable=invalid-name
         ("sock", ctypes.c_int),
         ("servIP", ctypes.c_char_p),
         ("hostip", ctypes.c_char_p),
-        ("port", ctypes.c_int),
+        ("port", ctypes.c_uint16),
         ("serialDevice", ctypes.c_char_p),
         ("socketPath", ctypes.c_char_p),
         ("ecuid", ctypes.c_char * 4),
+        ("ecuid2len", ctypes.c_uint8),
+        ("ecuid2", ctypes.c_char_p),
         ("baudrate", ctypes.c_uint),
         ("mode", ctypes.c_int),
         ("send_serial_header", ctypes.c_int),
@@ -114,16 +107,24 @@ class cDLTFilter(ctypes.Structure):  # pylint: disable=invalid-name
     {
         char apid[DLT_FILTER_MAX][DLT_ID_SIZE]; /**< application id */
         char ctid[DLT_FILTER_MAX][DLT_ID_SIZE]; /**< context id */
+        uint8_t apid2len[DLT_FILTER_MAX];       /**< length of application id */
+        char *apid2[DLT_FILTER_MAX];            /**< application id */
+        uint8_t ctid2len[DLT_FILTER_MAX];       /**< length of context id */
+        char *ctid2[DLT_FILTER_MAX];            /**< context id */
         int log_level[DLT_FILTER_MAX];          /**< log level */
         int32_t payload_max[DLT_FILTER_MAX];    /**< upper border for payload */
         int32_t payload_min[DLT_FILTER_MAX];    /**< lower border for payload */
-        int  counter;                           /**< number of filters */
+        int counter;                            /**< number of filters */
     } DltFilter;
     """
 
     _fields_ = [
         ("apid", (ctypes.c_char * DLT_ID_SIZE) * DLT_FILTER_MAX),
         ("ctid", (ctypes.c_char * DLT_ID_SIZE) * DLT_FILTER_MAX),
+        ("apid2len", ctypes.c_uint8 * DLT_FILTER_MAX),
+        ("apid2", ctypes.c_char_p * DLT_FILTER_MAX),
+        ("ctid2len", ctypes.c_uint8 * DLT_FILTER_MAX),
+        ("ctid2", ctypes.c_char_p * DLT_FILTER_MAX),
         ("log_level", ctypes.c_int * DLT_FILTER_MAX),
         ("payload_max", (ctypes.c_int32 * DLT_FILTER_MAX)),
         ("payload_min", (ctypes.c_int32 * DLT_FILTER_MAX)),
