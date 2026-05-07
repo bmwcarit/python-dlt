@@ -455,6 +455,7 @@ class DLTMessageHandler(DLTMessageDispatcherBase):
                         time.time() - self.last_connected,
                     )
                     self.last_message = time.time()
+                time.sleep(reconnect_delay)
                 continue
             try:
                 if self.last_connected:
