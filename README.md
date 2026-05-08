@@ -96,12 +96,33 @@ Here are examples of some interesting ways to use these classes:
     >>> broker.start()
     >>> broker.stop()
     >>>
-    >>> # Usually, used in conjunction with the DLTContext class from mtee
-    >>> from mtee.testing.connectors.connector_dlt import DLTContext
+    >>> class DLTContext(object):
+            def __init__(broker, filters):
+                self._broker = broker
+                self._filters = filters
+                self._queue = queue.Queue(maxsize=1000)
+                self._broker.add_context(self._queue, filters=filters)
+                self._msgs = []
+
+            def _get_msgs(self) -> None:
+                """Clean the message queue and move all messages to the local buffer"""
+                while True:
+                    try:
+                        self._msgs.append(self._queue.get_nowait())
+                    except queue.Empty:
+                        return
+
+            @property
+            def messages(self) -> list[DLTMessage]:
+                """Returns all messages received during the context"""
+                self._get_msgs()
+                return self._msgs
+    >>> 
     >>> broker = DLTBroker(ip_address="127.0.0.1", filename="/tmp/testing_log.dlt", verbose=True)
     >>> ctx = DLTContext(broker, filters=[("SYS", "JOUR")])
     >>> broker.start()
-    >>> print(ctx.wait_for(count=10))
+    >>> time.sleep(3)
+    >>> print(ctx.messages)
     >>>
 ```
 
