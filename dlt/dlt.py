@@ -122,6 +122,8 @@ class Payload(object):
         self._params = None
         self._noar = message.noar
         self._buf = ctypes.string_at(message.databuffer, message.datasize)
+        # Payload endianness is dependent on the MSBF bit (0x02) from the standard header HTYP field
+        self._endian = ">" if (message.standardheader.htyp & 0x02) else "<"
 
     def __getitem__(self, index):
         """Accessing the payload item as a list"""
@@ -142,7 +144,7 @@ class Payload(object):
 
         offset = 0
         for _ in range(self._noar):
-            type_info = struct.unpack_from("I", self._buf, offset)[0]
+            type_info = struct.unpack_from(self._endian + "I", self._buf, offset)[0]
             offset += struct.calcsize("I")
 
             def get_scod(type_info):
@@ -152,7 +154,7 @@ class Payload(object):
             value = None
             if type_info & DLT_TYPE_INFO_STRG:
                 if (get_scod(type_info) == DLT_SCOD_ASCII) or (get_scod(type_info) == DLT_SCOD_UTF8):
-                    length = struct.unpack_from("H", self._buf, offset)[0]
+                    length = struct.unpack_from(self._endian + "H", self._buf, offset)[0]
                     offset += struct.calcsize("H")
                     value = self._buf[offset : offset + length - 1]  # strip the string terminating char \x00
                     offset += length
@@ -163,21 +165,21 @@ class Payload(object):
 
                 tyle = type_info & DLT_TYPE_INFO_TYLE
                 if tyle == DLT_TYLE_8BIT:
-                    value = struct.unpack_from("B", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "B", self._buf, offset)[0]
                     offset += 1
                 elif tyle == DLT_TYLE_16BIT:
-                    value = struct.unpack_from("H", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "H", self._buf, offset)[0]
                     offset += 2
                 elif tyle == DLT_TYLE_32BIT:
-                    value = struct.unpack_from("I", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "I", self._buf, offset)[0]
                     offset += 4
                 elif tyle == DLT_TYLE_64BIT:
-                    value = struct.unpack_from("Q", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "Q", self._buf, offset)[0]
                     offset += 8
                 elif tyle == DLT_TYLE_128BIT:
-                    value = struct.unpack_from("QQ", self._buf, offset)
+                    value = struct.unpack_from(self._endian + "QQ", self._buf, offset)
                     offset += 16
-                    if sys.byteorder == "little":
+                    if self._endian == "<":
                         value = (value[1] << 64) | value[0]
                     else:
                         value = (value[0] << 64) | value[1]
@@ -188,45 +190,45 @@ class Payload(object):
 
                 tyle = type_info & DLT_TYPE_INFO_TYLE
                 if tyle == DLT_TYLE_8BIT:
-                    value = struct.unpack_from("b", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "b", self._buf, offset)[0]
                     offset += 1
                 elif tyle == DLT_TYLE_16BIT:
-                    value = struct.unpack_from("h", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "h", self._buf, offset)[0]
                     offset += 2
                 elif tyle == DLT_TYLE_32BIT:
-                    value = struct.unpack_from("i", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "i", self._buf, offset)[0]
                     offset += 4
                 elif tyle == DLT_TYLE_64BIT:
-                    value = struct.unpack_from("q", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "q", self._buf, offset)[0]
                     offset += 8
                 elif tyle == DLT_TYLE_128BIT:
-                    value = struct.unpack_from("qq", self._buf, offset)
+                    value = struct.unpack_from(self._endian + "qq", self._buf, offset)
                     offset += 16
-                    if sys.byteorder == "little":
+                    if self._endian == "<":
                         value = (value[1] << 64) | value[0]
                     else:
                         value = (value[0] << 64) | value[1]
 
             elif type_info & DLT_TYPE_INFO_FLOA:
                 if type_info & DLT_TYLE_64BIT:
-                    value = struct.unpack_from("d", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "d", self._buf, offset)[0]
                     offset += 8
                 else:
-                    value = struct.unpack_from("f", self._buf, offset)[0]
+                    value = struct.unpack_from(self._endian + "f", self._buf, offset)[0]
                     offset += 4
 
             elif type_info & DLT_TYPE_INFO_RAWD:
                 if type_info & DLT_TYPE_INFO_VARI:
                     pass
 
-                length = struct.unpack_from("H", self._buf, offset)[0]
+                length = struct.unpack_from(self._endian + "H", self._buf, offset)[0]
                 offset += struct.calcsize("H")
 
                 value = self._buf[offset : offset + length]
                 offset += length
 
             elif type_info & DLT_TYPE_INFO_BOOL:
-                value = struct.unpack_from("?", self._buf, offset)[0]
+                value = struct.unpack_from(self._endian + "?", self._buf, offset)[0]
                 offset += 1
 
             else:
@@ -351,9 +353,14 @@ class DLTMessage(cDLTMessage, MessageMode):
     @staticmethod
     def extract_sort_data(data):
         """Extract timestamp, message length, apid, ctid from a bytestring in DLT storage format (speed optimized)"""
-        htyp_data = ord(chr(data[16]))
-        len_data = data[19:17:-1]
-        len_value = ctypes.cast(len_data, ctypes.POINTER(ctypes.c_ushort)).contents.value + 16
+        if isinstance(data[16], int):
+            htyp_data = data[16]
+        else:
+            htyp_data = ord(data[16])
+        
+        # Standard header length is inherently big-endian. Use struct.unpack instead of 
+        # ctypes native pointer casting to ensure cross-platform compatibility (e.g. s390x).
+        len_value = struct.unpack(">H", data[18:20])[0] + 16
         apid = b""
         ctid = b""
         tmsp_value = 0.0
@@ -366,8 +373,8 @@ class DLTMessage(cDLTMessage, MessageMode):
 
         if htyp_data & DLT_HTYP_WTMS:
             tmsp_base = 31 + bytes_offset  # Typical timestamp end offset
-            tmsp_data = data[tmsp_base : tmsp_base - 4 : -1]
-            tmsp_value = ctypes.cast(tmsp_data, ctypes.POINTER(ctypes.c_uint32)).contents.value / 10000.0
+            # Timestamp in extra header is always big-endian natively
+            tmsp_value = struct.unpack(">I", data[tmsp_base - 3 : tmsp_base + 1])[0] / 10000.0
 
         if htyp_data & DLT_HTYP_UEH:
             apid_base = 38 + bytes_offset  # Typical APID end offset

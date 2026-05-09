@@ -5,6 +5,7 @@ import ctypes
 import logging
 import sys
 import ctypes.util
+import struct
 
 dlt_path = ctypes.util.find_library("dlt")
 
@@ -257,8 +258,11 @@ class MessageMode(object):
     def message_id(self):
         """Returns message ID of the DLTMessage"""
         if self.is_mode_non_verbose and (self.datasize >= 4):
-            ptr_int = ctypes.cast(self.databuffer, ctypes.POINTER(ctypes.c_uint32))
-            mid = ptr_int[0]
+            # DLT payload endianness is specified by the MSBF bit (0x02) in standard header HTYP
+            # We must use struct.unpack instead of casting to native pointers to support big-endian architectures like s390x
+            endian = ">" if (self.standardheader.htyp & 0x02) else "<"
+            buf = ctypes.string_at(self.databuffer, 4)
+            mid = struct.unpack(endian + "I", buf)[0]
             return mid
         return 0
 
@@ -273,8 +277,10 @@ class MessageMode(object):
         """Returns service ID of the DLTMessage"""
         service_id = 0
         if self.is_type_control and self.datasize >= 4:
-            ptr_int = ctypes.cast(self.databuffer, ctypes.POINTER(ctypes.c_uint32))
-            service_id = ptr_int[0]
+            # DLT payload endianness is specified by the MSBF bit (0x02) in standard header HTYP
+            endian = ">" if (self.standardheader.htyp & 0x02) else "<"
+            buf = ctypes.string_at(self.databuffer, 4)
+            service_id = struct.unpack(endian + "I", buf)[0]
         return service_id
 
     @property
@@ -396,7 +402,9 @@ class MessageMode(object):
         return buf.value.rstrip(b"\000").strip()
 
 
-class cDltStorageHeader(ctypes.Structure):
+# DLT storage headers are universally written in little-endian byte order, regardless of host architecture.
+# We explicitly use LittleEndianStructure so this struct is parsed correctly on big-endian architectures (e.g. s390x).
+class cDltStorageHeader(ctypes.LittleEndianStructure):
     """
     /**
      * The structure of the DLT file storage header. This header is used before each stored DLT message.
