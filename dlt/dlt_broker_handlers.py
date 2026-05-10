@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 import ctypes
 import logging
-from multiprocessing import Lock, Process, Value
+from multiprocessing import Lock, Process, Value, Event as MPEvent
 from queue import Empty
 import socket
 import time
@@ -324,7 +324,7 @@ class DLTFileSpinner(DLTMessageDispatcherBase):
     ):
         super().__init__(filter_queue, message_queue, mp_stop_event, dlt_time_value, filter_ack_queue)
         self.file_name = file_name
-        self.dlt_reader = load(filename=self.file_name, live_run=True)
+        self._stop_reading_proc = MPEvent()
 
     def is_valid_message(self, message):
         """According to AUTOSAR doc, message with empty apid and empty ctid is still valid"""
@@ -332,6 +332,9 @@ class DLTFileSpinner(DLTMessageDispatcherBase):
 
     def run(self):
         """DLTFileSpinner worker method"""
+        self.dlt_reader = load(filename=self.file_name, live_run=True)
+        self.dlt_reader.stop_reading_proc = self._stop_reading_proc
+
         logger.info("Start to process dlt file %s", self.file_name)
         # Even though dlt connector for ioc should only be instantiated after successful SerialConsole with fibex,
         # the corner case of not-existing dlt file will still be handled here with max 5 retires
@@ -369,8 +372,8 @@ class DLTFileSpinner(DLTMessageDispatcherBase):
                 logger.exception("Exception during the DLT message receive")
 
         logger.debug("DLTFileSpinner starts to quit...")
-        if not self.dlt_reader.stop_reading_proc.is_set():
-            self.dlt_reader.stop_reading_proc.set()
+        if not self._stop_reading_proc.is_set():
+            self._stop_reading_proc.set()
         self.message_queue.close()
         logger.info("DLTFileSpinner worker execution complete")
 
@@ -380,7 +383,7 @@ class DLTFileSpinner(DLTMessageDispatcherBase):
         at the moment that no more dlt messages could be dispatched.
         """
         logger.debug("Stop iterating to file %s", self.file_name)
-        self.dlt_reader.stop_reading_proc.set()
+        self._stop_reading_proc.set()
 
 
 class DLTMessageHandler(DLTMessageDispatcherBase):

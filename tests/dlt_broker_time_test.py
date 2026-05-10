@@ -21,12 +21,15 @@ def fake_py_dlt_client_main_loop(client, callback, *args, **kwargs):
 @contextmanager
 def dlt_broker(pydlt_main_func=fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=False):
     """Initialize a fake DLTBroker"""
+    def mock_client_connect(self):
+        self._client = MagicMock()
+        return True
+
     with (
-        patch("dlt.dlt_broker_handlers.DLTMessageHandler._client_connect"),
+        patch("dlt.dlt_broker_handlers.DLTMessageHandler._client_connect", new=mock_client_connect),
         patch("dlt.dlt_broker_handlers.py_dlt_client_main_loop", side_effect=pydlt_main_func),
     ):
         broker = DLTBroker("42.42.42.42", enable_dlt_time=enable_dlt_time, enable_filter_set_ack=enable_filter_set_ack)
-        broker.msg_handler._client = MagicMock()
 
         try:
             broker.start()
@@ -87,33 +90,23 @@ def test_start_stop_dlt_broker_without_dlt_time():
 )
 def test_dlt_broker_get_dlt_time(input_sec, input_msec, expected_value):
     """Test to get time from DLTBroker"""
-
-    def handle(client, callback=None, *args, **kwargs):
-        return callback(MockDLTMessage(payload="test_payload", sec=input_sec, msec=input_msec))
-
-    with dlt_broker(handle) as broker:
-        time.sleep(0.01)
-
+    broker = DLTBroker("42.42.42.42", enable_dlt_time=True)
+    msg = MockDLTMessage(payload="test_payload", sec=input_sec, msec=input_msec)
+    broker.msg_handler.handle(msg)
     assert broker.dlt_time() == expected_value
 
 
 def test_dlt_broker_get_latest_dlt_time():
     """Test to get the latest time from DLTBroker"""
-    # ref: https://stackoverflow.com/questions/3190706/nonlocal-keyword-in-python-2-x
-    time_value = {"v": 42}
-
-    def handle(client, callback=None, *args, **kwargs):
-        if time_value["v"] < 45:
-            time_value["v"] += 1
-
-        time.sleep(0.01)
-        return callback(MockDLTMessage(payload="test_payload", sec=time_value["v"], msec=42))
-
-    with dlt_broker(handle) as broker:
-        time_vals = set()
-        for i in range(10):
-            time_vals.add(broker.dlt_time())
-            time.sleep(0.01)
+    broker = DLTBroker("42.42.42.42", enable_dlt_time=True)
+    time_vals = set()
+    time_vals.add(broker.dlt_time())
+    broker.msg_handler.handle(MockDLTMessage(payload="test_payload", sec=43, msec=42))
+    time_vals.add(broker.dlt_time())
+    broker.msg_handler.handle(MockDLTMessage(payload="test_payload", sec=44, msec=42))
+    time_vals.add(broker.dlt_time())
+    broker.msg_handler.handle(MockDLTMessage(payload="test_payload", sec=45, msec=42))
+    time_vals.add(broker.dlt_time())
 
     assert sorted(time_vals) == [0.0, 43.42, 44.42, 45.42]
 
