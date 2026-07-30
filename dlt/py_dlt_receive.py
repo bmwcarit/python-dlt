@@ -5,7 +5,7 @@ import argparse
 import logging
 import time
 
-from dlt.dlt import DLT_UDP_MULTICAST_FD_BUFFER_SIZE, DLT_UDP_MULTICAST_BUFFER_SIZE
+from dlt.dlt import DLT_DAEMON_TCP_PORT, DLT_UDP_MULTICAST_FD_BUFFER_SIZE, DLT_UDP_MULTICAST_BUFFER_SIZE
 from dlt.dlt_broker import DLTBroker
 
 logging.basicConfig(format="%(asctime)s %(name)s %(levelname)-8s %(message)s")
@@ -18,6 +18,12 @@ def parse_args():
     logger.info("Parsing arguments")
     parser = argparse.ArgumentParser(description="Receive DLT messages")
     parser.add_argument("--host", required=True, help="hostname or ip address to connect to")
+    parser.add_argument(
+        "--port",
+        default=DLT_DAEMON_TCP_PORT,
+        type=int,
+        help=f"Port of the DLT Daemon to connect to. default: {DLT_DAEMON_TCP_PORT}",
+    )
     parser.add_argument("--file", required=True, help="The file into which the messages will be written")
     parser.add_argument(
         "--udp-fd-buffer-size",
@@ -41,6 +47,7 @@ def dlt_receive(options):
     logger.info("Creating DLTBroker instance")
     broker = DLTBroker(
         ip_address=options.host,
+        port=options.port,
         filename=options.file,
         udp_fd_buffer_size_bytes=options.udp_buffer_size,
         udp_buffer_size_bytes=options.udp_fd_buffer_size,
