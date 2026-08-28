@@ -658,7 +658,11 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         :rtype: int
         """
         with open(self.filename, "rb") as fobj:
-            last_position = self.file_position  # pylint: disable=access-member-before-definition
+            # Skip past the 4-byte DLT\x01 magic of the known-bad message.
+            # Starting at file_position would find its own magic at offset 0,
+            # causing the caller to treat it as unrecoverable and break.
+            # This only happens if the magic isn't also corrupted.
+            last_position = self.file_position + 4  # pylint: disable=access-member-before-definition
             fobj.seek(last_position)
             buf = fobj.read(1024)
             while buf:
