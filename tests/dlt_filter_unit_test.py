@@ -60,5 +60,4 @@ class TestDLTFilter(unittest.TestCase):
         assert self.dlt_filter.add("AAAA", "BBBB") == 0
         assert self.dlt_filter.add("XXX", "YYY") == 0
         assert self.dlt_filter.add("CCCC", "DDDD") == 0
-        print(self.dlt_filter)
         assert str(self.dlt_filter) == str([(b"AAAA", b"BBBB"), (b"XXX", b"YYY"), (b"CCCC", b"DDDD")])

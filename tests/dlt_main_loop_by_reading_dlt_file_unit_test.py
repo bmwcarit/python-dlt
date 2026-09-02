@@ -34,7 +34,6 @@ class TestMainLoopByReadingDltFile(unittest.TestCase):
 
     def _callback_for_message(self, message):
         self.callback_is_called = True
-        print("Called here")
         if message:
             self.message_queue.append(message)
         return self.callback_return_value
