@@ -650,15 +650,18 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         if dltlib.dlt_file_free(ctypes.byref(self), self.verbose) == DLT_RETURN_ERROR:
             raise RuntimeError("Could not cleanup DLTFile")
 
-    def _find_next_header(self):
+    def _find_next_header(self, start_position=None):
         """Helper function for generate_index to skip over invalid storage headers.
 
-        :returns: Offset to the next storage header position (after
-                  self.file_position), if it was found, or position of EOF if not
+        :param int start_position: Position from which to start searching (defaults to self.file_position)
+        :returns: Offset to the next storage header position (at or after
+                  start_position), if it was found, or position of EOF if not
         :rtype: int
         """
+        if start_position is None:
+            start_position = self.file_position
         with open(self.filename, "rb") as fobj:
-            last_position = self.file_position  # pylint: disable=access-member-before-definition
+            last_position = start_position  # pylint: disable=access-member-before-definition
             fobj.seek(last_position)
             buf = fobj.read(1024)
             while buf:
@@ -686,7 +689,22 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
             if self.file_length == 0:
                 raise IOError(DLT_EMPTY_FILE_ERROR)
             while self.file_position < self.file_length:
+                start_pos = self.file_position
                 ret = dltlib.dlt_file_read(ctypes.byref(self), self.verbose)
+                if ret >= DLT_RETURN_OK:
+                    hdr_bytes = ctypes.string_at(self.msg.headerbuffer, self.msg.headersize)
+                    hdr_idx = hdr_bytes[1:].find(b"DLT\x01")
+                    if hdr_idx != -1:
+                        subsequent_header = start_pos + 1 + hdr_idx
+                        logger.warning(
+                            "Found storage header start sequence inside header at %s, skipping corrupt message to %s",
+                            start_pos,
+                            subsequent_header,
+                        )
+                        self.corrupt_msg_count += 1
+                        self.file_position = subsequent_header
+                        continue
+
                 if ret < DLT_RETURN_OK:
                     # - This can happen if either the frame's storage
                     # header could not be read correctly or the frame is
@@ -831,6 +849,7 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
         self._open_file()
 
         found_data = False
+        stuck_position = None
         while not self._is_stop_reading_set() or corruption_check_try:  # pylint: disable=too-many-nested-blocks
             os_stat = os.stat(self.filename)
             mtime = os_stat.st_mtime
@@ -839,9 +858,25 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                 cached_mtime = mtime
                 corruption_check_try = False
 
-                while not self._is_stop_reading_set() and (
-                    dltlib.dlt_file_read(ctypes.byref(self), self.verbose) >= DLT_RETURN_OK
-                ):
+                while not self._is_stop_reading_set():
+                    start_pos = self.file_position
+                    if dltlib.dlt_file_read(ctypes.byref(self), self.verbose) < DLT_RETURN_OK:
+                        break
+
+                    hdr_bytes = ctypes.string_at(self.msg.headerbuffer, self.msg.headersize)
+                    hdr_idx = hdr_bytes[1:].find(b"DLT\x01")
+                    if hdr_idx != -1:
+                        subsequent_header = start_pos + 1 + hdr_idx
+                        logger.warning(
+                            "Found storage header start sequence inside header at %s, skipping corrupt message to %s",
+                            start_pos,
+                            subsequent_header,
+                        )
+                        self.corrupt_msg_count += 1
+                        self.file_position = subsequent_header
+                        corruption_check_try = True
+                        break
+
                     found_data = True
                     if (
                         self.filter
@@ -863,7 +898,28 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                     next_header_position = self._find_next_header()
                     if next_header_position:
                         if self.file_position == next_header_position:
-                            if not self.live_run:
+                            if self.live_run:
+                                # We could be either at the end of the file or stuck on a corrupt message.
+                                # There is no real way to know for sure on the first iteration, only if we came
+                                # back here the second time and the file position is still the same, then we can
+                                # try reading ahead to see if any more messages were written to the file. If not, 
+                                # then we are at the end of the file and can just wait for more messages to be written.
+                                # If there are more messages, then we are stuck on a corrupt message and 
+                                # can skip to the next header.
+                                if not stuck_position or self.file_position != stuck_position:
+                                    stuck_position = self.file_position
+                                else:
+                                    subsequent_header = self._find_next_header(self.file_position + 1)
+                                    if subsequent_header:
+                                        logger.warning(
+                                            "Incomplete message while parsing live DLT file at %s, skipping to next header at %s",
+                                            self.file_position,
+                                            subsequent_header,
+                                        )
+                                        self.corrupt_msg_count += 1
+                                        self.file_position = subsequent_header
+                                        corruption_check_try = True
+                            else:
                                 logger.warning("Incomplete message while parsing DLT file at %s", self.file_position)
                                 self.corrupt_msg_count += 1
                                 self.file_position += 1
