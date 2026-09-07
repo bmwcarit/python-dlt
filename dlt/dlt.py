@@ -357,8 +357,8 @@ class DLTMessage(cDLTMessage, MessageMode):
             htyp_data = data[16]
         else:
             htyp_data = ord(data[16])
-        
-        # Standard header length is inherently big-endian. Use struct.unpack instead of 
+
+        # Standard header length is inherently big-endian. Use struct.unpack instead of
         # ctypes native pointer casting to ensure cross-platform compatibility (e.g. s390x).
         len_value = struct.unpack(">H", data[18:20])[0] + 16
         apid = b""
@@ -718,12 +718,17 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                     # corrupt. If the frame's storage header could not
                     # be read correctly we try to get the next storage
                     # header and continue indexing
-                    logger.debug("DLT FILE READ ERROR - Attempting to find next storage header at position %d", self.file_position)
+                    logger.debug(
+                        "DLT FILE READ ERROR - Attempting to find next storage header at position %d",
+                        self.file_position,
+                    )
                     next_header_position = self._find_next_header()
                     if next_header_position:
                         logger.debug("Found next storage header at position %d", next_header_position)
                         if self.file_position == next_header_position:  # pylint: disable=no-else-break
-                            logger.debug("Next storage header is at the same position as current file position, skipping 1 byte")
+                            logger.debug(
+                                "Next storage header is at the same position as current file position, skipping 1 byte"
+                            )
                             self.file_position += 1
                             self.file_position = self._find_next_header()
                         else:
@@ -909,9 +914,9 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                                 # We could be either at the end of the file or stuck on a corrupt message.
                                 # There is no real way to know for sure on the first iteration, only if we came
                                 # back here the second time and the file position is still the same, then we can
-                                # try reading ahead to see if any more messages were written to the file. If not, 
+                                # try reading ahead to see if any more messages were written to the file. If not,
                                 # then we are at the end of the file and can just wait for more messages to be written.
-                                # If there are more messages, then we are stuck on a corrupt message and 
+                                # If there are more messages, then we are stuck on a corrupt message and
                                 # can skip to the next header.
                                 if not stuck_position or self.file_position != stuck_position:
                                     stuck_position = self.file_position

@@ -55,8 +55,10 @@ def check_libdlt_version(api_ver):
     """
     ver_info = tuple(int(num) for num in api_ver.split("."))
     if ver_info < (2, 18, 5):
-        raise ImportError("python-dlt only supports libdlt \
-        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above")
+        raise ImportError(
+            "python-dlt only supports libdlt \
+        v2.18.5 (33fbad18c814e13bd7ba2053525d8959fee437d1) or above"
+        )
 
 
 API_VER = get_version(dltlib)  # noqa: F405

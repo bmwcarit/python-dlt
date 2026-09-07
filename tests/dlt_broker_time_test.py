@@ -21,6 +21,7 @@ def fake_py_dlt_client_main_loop(client, callback, *args, **kwargs):
 @contextmanager
 def dlt_broker(pydlt_main_func=fake_py_dlt_client_main_loop, enable_dlt_time=True, enable_filter_set_ack=False):
     """Initialize a fake DLTBroker"""
+
     def mock_client_connect(self):
         self._client = MagicMock()
         return True
