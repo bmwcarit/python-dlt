@@ -259,7 +259,8 @@ class MessageMode(object):
         """Returns message ID of the DLTMessage"""
         if self.is_mode_non_verbose and (self.datasize >= 4):
             # DLT payload endianness is specified by the MSBF bit (0x02) in standard header HTYP
-            # We must use struct.unpack instead of casting to native pointers to support big-endian architectures like s390x
+            # We must use struct.unpack instead of casting to native pointers to support
+            # big-endian architectures like s390x
             endian = ">" if (self.standardheader.htyp & 0x02) else "<"
             buf = ctypes.string_at(self.databuffer, 4)
             mid = struct.unpack(endian + "I", buf)[0]
