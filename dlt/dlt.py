@@ -8,7 +8,6 @@ import os
 import re
 import socket
 import struct
-import sys
 import time
 import threading
 import multiprocessing
@@ -924,7 +923,8 @@ class cDLTFile(ctypes.Structure):  # pylint: disable=invalid-name
                                     subsequent_header = self._find_next_header(self.file_position + 1)
                                     if subsequent_header:
                                         logger.warning(
-                                            "Incomplete message while parsing live DLT file at %s, skipping to next header at %s",
+                                            "Incomplete message while parsing live DLT file at %s,"
+                                            " skipping to next header at %s",
                                             self.file_position,
                                             subsequent_header,
                                         )

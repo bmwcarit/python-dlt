@@ -4,7 +4,6 @@
 from contextlib import contextmanager
 from multiprocessing import Queue
 import queue as tqueue
-import time
 from unittest.mock import ANY, patch, MagicMock
 
 import pytest
